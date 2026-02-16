@@ -10,6 +10,17 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+type UserService interface {
+	Login(ctx context.Context, email, password string) (string, string, error)
+	SignUp(ctx context.Context, user *entities.User) (*entities.User, string, string, error)
+	ReedUserById(ctx context.Context, id string) (*entities.User, error)
+	UpdateUser(ctx context.Context, user *entities.User) (*entities.User, error)
+	UpdatePassword(ctx context.Context, user *entities.User) error
+	DeleteUser(ctx context.Context, id string) error
+	RefreshTokens(id, role string) (string, string, error)
+	ResetPassword(ctx context.Context, id, answer string) error
+}
+
 type UserHandler struct {
 	service UserService
 }
@@ -18,20 +29,20 @@ func NewUserHandler(service UserService) *UserHandler {
 	return &UserHandler{service: service}
 }
 
-// Login godoc
+// Login
 // @Summary Вход пользователя
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Param request body dto.UserRequest true "Данные входа"
 // @Success 200 {object} dto.LoginResponse
-// @Failure 400 {object} dto.LoginResponse
-// @Failure 500 {object} dto.LoginResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /auth/login [post]
 func (h *UserHandler) Login(c echo.Context) error {
 	var request dto.UserRequest
 	if err := c.Bind(&request); err != nil {
-		return c.JSON(http.StatusBadRequest, dto.LoginResponse{Error: "invalid request"})
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -39,7 +50,7 @@ func (h *UserHandler) Login(c echo.Context) error {
 
 	accessToken, refreshToken, err := h.service.Login(ctx, request.Email, request.Password)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, dto.LoginResponse{Error: err.Error()})
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
 	return c.JSON(http.StatusOK, dto.LoginResponse{
@@ -48,20 +59,20 @@ func (h *UserHandler) Login(c echo.Context) error {
 	})
 }
 
-// SignUp godoc
+// SignUp
 // @Summary Регистрация пользователя
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Param request body dto.UserRequest true "Данные регистрации"
-// @Success 200 {object} dto.SignUpResponse
-// @Failure 400 {object} dto.SignUpResponse
-// @Failure 500 {object} dto.SignUpResponse
+// @Success 201 {object} dto.SignUpResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /auth/signup [post]
 func (h *UserHandler) SignUp(c echo.Context) error {
 	var request dto.UserRequest
 	if err := c.Bind(&request); err != nil {
-		return c.JSON(http.StatusBadRequest, dto.SignUpResponse{Error: "invalid request"})
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -78,10 +89,10 @@ func (h *UserHandler) SignUp(c echo.Context) error {
 	})
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, dto.SignUpResponse{Error: err.Error()})
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
-	return c.JSON(http.StatusOK, dto.SignUpResponse{
+	return c.JSON(http.StatusCreated, dto.SignUpResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		User: dto.UserResponse{
@@ -97,20 +108,21 @@ func (h *UserHandler) SignUp(c echo.Context) error {
 	})
 }
 
-// Refresh godoc
+// Refresh
 // @Summary Обновление токенов
 // @Tags auth
 // @Security BearerAuth
 // @Produce json
 // @Success 200 {object} dto.LoginResponse
-// @Failure 500 {object} dto.LoginResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /auth/refresh [post]
 func (h *UserHandler) Refresh(c echo.Context) error {
 	id := c.Get("id").(string)
 	role := c.Get("role").(string)
 	access, refresh, err := h.service.RefreshTokens(id, role)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, dto.LoginResponse{Error: err.Error()})
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
 	return c.JSON(http.StatusOK, dto.LoginResponse{
@@ -119,13 +131,14 @@ func (h *UserHandler) Refresh(c echo.Context) error {
 	})
 }
 
-// ResetPassword godoc
+// ResetPassword
 // @Summary Сброс пароля
 // @Tags auth
 // @Security BearerAuth
 // @Param answer query string true "Ответ на секретный вопрос"
 // @Success 204
-// @Failure 500 {object} dto.LoginResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /auth/reset-password [post]
 func (h *UserHandler) ResetPassword(c echo.Context) error {
 	id := c.Get("id").(string)
@@ -136,24 +149,25 @@ func (h *UserHandler) ResetPassword(c echo.Context) error {
 
 	err := h.service.ResetPassword(ctx, id, answer)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, dto.LoginResponse{Error: err.Error()})
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
 	return c.NoContent(http.StatusNoContent)
 }
 
-// ReadSelf godoc
+// ReadSelf
 // @Summary Получить текущего пользователя
 // @Tags users
 // @Security BearerAuth
 // @Produce json
 // @Success 200 {object} dto.UserResponse
-// @Failure 500 {object} dto.UserResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /users/me [get]
 func (h *UserHandler) ReadSelf(c echo.Context) error {
 	id := c.Get("id").(string)
 	if id == "" {
-		return c.JSON(http.StatusBadRequest, dto.UserResponse{Error: "invalid request"})
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -161,7 +175,7 @@ func (h *UserHandler) ReadSelf(c echo.Context) error {
 
 	user, err := h.service.ReedUserById(ctx, id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, dto.UserResponse{Error: err.Error()})
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
 	return c.JSON(http.StatusOK, dto.UserResponse{
@@ -176,20 +190,30 @@ func (h *UserHandler) ReadSelf(c echo.Context) error {
 	})
 }
 
-// ReadUser godoc
+// ReadUser
 // @Summary Получить пользователя по ID
 // @Tags users
 // @Security BearerAuth
 // @Param id path string true "ID пользователя"
 // @Produce json
 // @Success 200 {object} dto.UserResponse
-// @Failure 400 {object} dto.UserResponse
-// @Failure 500 {object} dto.UserResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 403 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /users/{id} [get]
 func (h *UserHandler) ReadUser(c echo.Context) error {
 	id := c.Param("id")
 	if id == "" {
-		return c.JSON(http.StatusBadRequest, dto.UserResponse{Error: "invalid request"})
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
+	}
+
+	role := c.Get("role").(string)
+	if role == "client" {
+		tokenId := c.Get("id").(string)
+		if !(tokenId == id) {
+			return c.JSON(http.StatusForbidden, dto.ErrorResponse{Error: "access denied"})
+		}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -197,7 +221,7 @@ func (h *UserHandler) ReadUser(c echo.Context) error {
 
 	user, err := h.service.ReedUserById(ctx, id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, dto.UserResponse{Error: err.Error()})
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
 	return c.JSON(http.StatusOK, dto.UserResponse{
@@ -211,7 +235,7 @@ func (h *UserHandler) ReadUser(c echo.Context) error {
 	})
 }
 
-// UpdateUser godoc
+// UpdateUser
 // @Summary Обновить профиль
 // @Tags users
 // @Security BearerAuth
@@ -219,18 +243,19 @@ func (h *UserHandler) ReadUser(c echo.Context) error {
 // @Produce json
 // @Param request body dto.UserRequest true "Данные пользователя"
 // @Success 200 {object} dto.UserResponse
-// @Failure 400 {object} dto.UserResponse
-// @Failure 500 {object} dto.UserResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /users/me [put]
 func (h *UserHandler) UpdateUser(c echo.Context) error {
 	var request dto.UserRequest
 	if err := c.Bind(&request); err != nil {
-		return c.JSON(http.StatusBadRequest, dto.UserResponse{Error: "invalid request"})
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
 	}
 
 	id := c.Get("id").(string)
 	if id == "" {
-		return c.JSON(http.StatusBadRequest, dto.UserResponse{Error: "invalid request"})
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -247,7 +272,7 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 		Points:   0,
 	})
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, dto.UserResponse{Error: err.Error()})
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
 	return c.JSON(http.StatusOK, dto.UserResponse{
@@ -262,25 +287,26 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 	})
 }
 
-// ChangePassword godoc
+// ChangePassword
 // @Summary Изменить пароль
 // @Tags users
 // @Security BearerAuth
 // @Accept json
 // @Param request body dto.UserRequest true "Новый пароль"
 // @Success 204
-// @Failure 400 {object} dto.UserResponse
-// @Failure 500 {object} dto.UserResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /users/me/password [patch]
 func (h *UserHandler) ChangePassword(c echo.Context) error {
 	var request dto.UserRequest
 	if err := c.Bind(&request); err != nil {
-		return c.JSON(http.StatusBadRequest, dto.UserResponse{Error: "invalid request"})
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
 	}
 
 	id := c.Get("id").(string)
 	if id == "" {
-		return c.JSON(http.StatusBadRequest, dto.UserResponse{Error: "invalid request"})
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -291,23 +317,24 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 		Password: request.Password,
 	})
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, dto.UserResponse{Error: err.Error()})
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
 	return c.NoContent(http.StatusNoContent)
 }
 
-// DeleteUser godoc
+// DeleteUser
 // @Summary Удалить аккаунт
 // @Tags users
 // @Security BearerAuth
 // @Success 204
-// @Failure 500 {object} dto.UserResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
 // @Router /users/me [delete]
 func (h *UserHandler) DeleteUser(c echo.Context) error {
 	id := c.Get("id").(string)
 	if id == "" {
-		return c.JSON(http.StatusBadRequest, dto.UserResponse{Error: "invalid request"})
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -315,7 +342,7 @@ func (h *UserHandler) DeleteUser(c echo.Context) error {
 
 	err := h.service.DeleteUser(ctx, id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, dto.UserResponse{Error: err.Error()})
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
 	return c.NoContent(http.StatusNoContent)

@@ -12,18 +12,21 @@
 
 ## Установка и запуск
 
-### 1. Клонируйте репозиторий
+### 1. Установите язык Go версии 1.25+
+https://go.dev/doc/install
+
+### 2. Клонируйте репозиторий
 
 ```bash
 git clone https://github.com/TwiLightDM/story-book.git
 cd story-book
 ```
-### 2. Запуск сервисов через Docker Compose
+### 3. Запуск сервисов через Docker Compose
 
 ```bash
 docker-compose up
 ```
-### 3. Запуск Go-приложения
+### 4. Запуск Go-приложения
 
 ```bash
 go mod tidy

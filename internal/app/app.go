@@ -30,6 +30,7 @@ func Run(cfg *config.Config) error {
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
 	e.Use(middleware.RequestLogger())
+
 	db, err := postgres.InitDB(cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.Username, cfg.Postgres.Password, cfg.Postgres.Database)
 	if err != nil {
 		return err

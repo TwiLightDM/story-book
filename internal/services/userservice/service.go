@@ -11,15 +11,12 @@ import (
 	"github.com/google/uuid"
 )
 
-type UserService interface {
-	Login(ctx context.Context, email, password string) (string, string, error)
-	SignUp(ctx context.Context, user *entities.User) (*entities.User, string, string, error)
-	ReedUserById(ctx context.Context, id string) (*entities.User, error)
-	UpdateUser(ctx context.Context, user *entities.User) (*entities.User, error)
-	UpdatePassword(ctx context.Context, user *entities.User) error
-	DeleteUser(ctx context.Context, id string) error
-	RefreshTokens(id, role string) (string, string, error)
-	ResetPassword(ctx context.Context, id, answer string) error
+type UserRepository interface {
+	Create(ctx context.Context, user *entities.User) error
+	ReadByEmail(ctx context.Context, email string) (*entities.User, error)
+	ReadById(ctx context.Context, id string) (*entities.User, error)
+	Update(ctx context.Context, user *entities.User) (*entities.User, error)
+	Delete(ctx context.Context, id string) error
 }
 
 type userService struct {
@@ -39,7 +36,7 @@ func (s *userService) Login(ctx context.Context, email, password string) (string
 		return "", "", err
 	}
 	if user == nil {
-		return "", "", errors.New("user not found")
+		return "", "", ErrUserNotFounded
 	}
 
 	if err = s.encrypt.PasswordComparison(user.Password, password, user.Salt); err != nil {
@@ -66,10 +63,12 @@ func (s *userService) Login(ctx context.Context, email, password string) (string
 func (s *userService) SignUp(ctx context.Context, user *entities.User) (*entities.User, string, string, error) {
 	existing, err := s.repo.ReadByEmail(ctx, user.Email)
 	if err != nil {
-		return nil, "", "", err
+		if !errors.Is(err, ErrUserNotFounded) {
+			return nil, "", "", err
+		}
 	}
 	if existing != nil {
-		return nil, "", "", errors.New("user already exists")
+		return nil, "", "", ErrUserAlreadyExists
 	}
 
 	err = s.validate.IsValidEmail(user.Email)

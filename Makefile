@@ -15,7 +15,12 @@ migrate-down:
 	$(MIGRATE) down
 migrate-force:
 	$(MIGRATE) force ${VERSION}
+
 run:
 	go run main.go
+
 swagger:
 	swag init -g main.go -o internal/docs
+
+lint:
+	golangci-lint run

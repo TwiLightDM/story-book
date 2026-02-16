@@ -8,14 +8,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserRepository interface {
-	Create(ctx context.Context, user *entities.User) error
-	ReadByEmail(ctx context.Context, email string) (*entities.User, error)
-	ReadById(ctx context.Context, id string) (*entities.User, error)
-	Update(ctx context.Context, user *entities.User) (*entities.User, error)
-	Delete(ctx context.Context, id string) error
-}
-
 type userRepository struct {
 	db *gorm.DB
 }
@@ -34,7 +26,7 @@ func (r *userRepository) ReadByEmail(ctx context.Context, email string) (*entiti
 		WithContext(ctx).
 		Where("email = ?", email).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
+			return nil, ErrUserNotFounded
 		}
 		return nil, err
 	}
@@ -48,7 +40,7 @@ func (r *userRepository) ReadById(ctx context.Context, id string) (*entities.Use
 		Where("id = ?", id).
 		First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
+			return nil, ErrUserNotFounded
 		}
 		return nil, err
 	}
@@ -66,7 +58,7 @@ func (r *userRepository) Update(ctx context.Context, user *entities.User) (*enti
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
+			return nil, ErrUserNotFounded
 		}
 
 		return nil, err

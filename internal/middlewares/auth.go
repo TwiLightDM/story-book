@@ -13,12 +13,12 @@ func AuthMiddleware(jwtService jwtservice.JWTService) echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			authHeader := c.Request().Header.Get("Authorization")
 			if authHeader == "" {
-				return echo.NewHTTPError(http.StatusUnauthorized, "missing authorization header")
+				return echo.NewHTTPError(http.StatusUnauthorized, ErrMissingAuthorizationHeader)
 			}
 
 			parts := strings.Split(authHeader, " ")
 			if len(parts) != 2 || parts[0] != "Bearer" {
-				return echo.NewHTTPError(http.StatusUnauthorized, "invalid authorization header")
+				return echo.NewHTTPError(http.StatusUnauthorized, ErrInvalidAuthorizationHeader)
 			}
 
 			claims, err := jwtService.ParseJWT(parts[1])

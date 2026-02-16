@@ -11,32 +11,27 @@ type UserRequest struct {
 }
 
 type UserResponse struct {
-	Id       string `json:"id,omitempty"`
-	Name     string `json:"name,omitempty"`
-	Surname  string `json:"surname,omitempty"`
-	Email    string `json:"email,omitempty"`
-	Phone    string `json:"phone,omitempty"`
-	Role     string `json:"role,omitempty"`
-	Question string `json:"question,omitempty"`
-	Answer   string `json:"answer,omitempty"`
-	Points   int    `json:"points,omitempty"`
-	Error    string `json:"error,omitempty"`
+	Id       string `json:"id"`
+	Name     string `json:"name"`
+	Surname  string `json:"surname"`
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+	Role     string `json:"role"`
+	Question string `json:"question"`
+	Points   int    `json:"points"`
 }
 
 type UserListResponse struct {
-	Users []UserResponse `json:"users,omitempty"`
-	Error string         `json:"error,omitempty"`
+	Users []UserResponse `json:"users"`
 }
 
 type LoginResponse struct {
-	AccessToken  string `json:"access_token,omitempty"`
-	RefreshToken string `json:"refresh_token,omitempty"`
-	Error        string `json:"error,omitempty"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 type SignUpResponse struct {
-	User         UserResponse `json:"user,omitempty"`
-	AccessToken  string       `json:"access_token,omitempty"`
-	RefreshToken string       `json:"refresh_token,omitempty"`
-	Error        string       `json:"error,omitempty"`
+	User         UserResponse `json:"user"`
+	AccessToken  string       `json:"access_token"`
+	RefreshToken string       `json:"refresh_token"`
 }
