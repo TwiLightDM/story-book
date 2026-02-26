@@ -36,7 +36,7 @@ func (s *userService) Login(ctx context.Context, email, password string) (string
 		return "", "", err
 	}
 	if user == nil {
-		return "", "", ErrUserNotFounded
+		return "", "", ErrUserNotFound
 	}
 
 	if err = s.encrypt.PasswordComparison(user.Password, password, user.Salt); err != nil {
@@ -63,7 +63,7 @@ func (s *userService) Login(ctx context.Context, email, password string) (string
 func (s *userService) SignUp(ctx context.Context, user *entities.User) (*entities.User, string, string, error) {
 	existing, err := s.repo.ReadByEmail(ctx, user.Email)
 	if err != nil {
-		if !errors.Is(err, ErrUserNotFounded) {
+		if !errors.Is(err, ErrUserNotFound) {
 			return nil, "", "", err
 		}
 	}

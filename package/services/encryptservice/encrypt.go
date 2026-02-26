@@ -30,7 +30,7 @@ func (e encryptService) HashPassword(password string) (string, string, error) {
 	}
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(salt+password), bcrypt.MinCost)
 	if err != nil {
-		return "", "", errors.Join(ErrHashingPassword, err)
+		return "", "", ErrHashingPassword
 	}
 	return string(hashedPassword), salt, nil
 }
@@ -39,7 +39,7 @@ func (e encryptService) PasswordComparison(hashedPassword, password, salt string
 	saltPassword := salt + password
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(saltPassword))
 	if err != nil {
-		return errors.Join(ErrInvalidPassword, err)
+		return ErrInvalidPassword
 	}
 	return nil
 }

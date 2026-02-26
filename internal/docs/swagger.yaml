@@ -1,5 +1,49 @@
 basePath: /
 definitions:
+  dto.BookRequest:
+    properties:
+      amount:
+        type: integer
+      author:
+        type: string
+      cost:
+        type: number
+      description:
+        type: string
+      discount:
+        type: integer
+      image:
+        type: string
+      publisher:
+        type: string
+      title:
+        type: string
+      year:
+        type: integer
+    type: object
+  dto.BookResponse:
+    properties:
+      amount:
+        type: integer
+      author:
+        type: string
+      cost:
+        type: number
+      description:
+        type: string
+      discount:
+        type: integer
+      id:
+        type: string
+      image:
+        type: string
+      publisher:
+        type: string
+      title:
+        type: string
+      year:
+        type: integer
+    type: object
   dto.ErrorResponse:
     properties:
       error:
@@ -167,6 +211,160 @@ paths:
       summary: Регистрация пользователя
       tags:
       - auth
+  /books:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.BookResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Получить книги
+      tags:
+      - books
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные книги
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.BookRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.BookResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Создать книгу
+      tags:
+      - books
+  /books/{id}:
+    delete:
+      parameters:
+      - description: ID книги
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удалить книгу
+      tags:
+      - books
+    get:
+      parameters:
+      - description: ID книги
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.BookResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Получить книгу по ID
+      tags:
+      - books
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID книги
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Данные книги
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.BookRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.BookResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновить книгу
+      tags:
+      - books
   /users/{id}:
     get:
       parameters:

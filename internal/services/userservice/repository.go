@@ -26,7 +26,7 @@ func (r *userRepository) ReadByEmail(ctx context.Context, email string) (*entiti
 		WithContext(ctx).
 		Where("email = ?", email).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrUserNotFounded
+			return nil, ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (r *userRepository) ReadById(ctx context.Context, id string) (*entities.Use
 		Where("id = ?", id).
 		First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrUserNotFounded
+			return nil, ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (r *userRepository) Update(ctx context.Context, user *entities.User) (*enti
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrUserNotFounded
+			return nil, ErrUserNotFound
 		}
 
 		return nil, err

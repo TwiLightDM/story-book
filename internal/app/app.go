@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"story-book/internal/config"
 	"story-book/internal/middlewares"
+	"story-book/internal/services/bookservice"
 	"story-book/internal/services/userservice"
 	"story-book/package/databases/postgres"
 	"story-book/package/services/encryptservice"
@@ -46,7 +47,11 @@ func Run(cfg *config.Config) error {
 	userService := userservice.NewUserService(userRepository, jwtService, encryptService, validateService)
 	userHandler := userservice.NewUserHandler(userService)
 
-	registerRoutes(e, authMiddleware, userHandler)
+	bookRepository := bookservice.NewBookRepository(db)
+	bookService := bookservice.NewBookService(bookRepository)
+	bookHandler := bookservice.NewBookHandler(bookService)
+
+	registerRoutes(e, authMiddleware, userHandler, bookHandler)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.BackendPort,
@@ -91,6 +96,7 @@ func Run(cfg *config.Config) error {
 func registerRoutes(e *echo.Echo,
 	authMiddleware echo.MiddlewareFunc,
 	userHandler *userservice.UserHandler,
+	bookHandler *bookservice.BookHandler,
 ) {
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
@@ -106,4 +112,11 @@ func registerRoutes(e *echo.Echo,
 	users.PUT("/me", userHandler.UpdateUser)
 	users.PATCH("/me/password", userHandler.ChangePassword)
 	users.DELETE("/me", userHandler.DeleteUser)
+
+	books := e.Group("/books")
+	books.POST("", bookHandler.CreateBook, authMiddleware)
+	books.GET("", bookHandler.ReadBooks)
+	books.GET("/:id", bookHandler.ReadBook)
+	books.PUT("/:id", bookHandler.UpdateBook, authMiddleware)
+	books.DELETE("/:id", bookHandler.DeleteBook, authMiddleware)
 }

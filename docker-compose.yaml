@@ -21,18 +21,6 @@ services:
     volumes:
       - redisdata:/var/lib/redis/data/redisdata
 
-  mongo:
-    image: mongo:7
-    container_name: mongo
-    restart: unless-stopped
-    env_file:
-      - .env
-    ports:
-      - "${MONGO_PORT}:27017"
-    volumes:
-      - mongodata:/data/db
-
 volumes:
   pgdata:
   redisdata:
-  mongodata:
