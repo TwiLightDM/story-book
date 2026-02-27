@@ -20,10 +20,12 @@ func (r *bookRepository) Create(ctx context.Context, book *entities.Book) error 
 	return r.db.WithContext(ctx).Create(book).Error
 }
 
-func (r *bookRepository) ReadAll(ctx context.Context) ([]entities.Book, error) {
+func (r *bookRepository) ReadAll(ctx context.Context, offset, limit int) ([]entities.Book, error) {
 	var books []entities.Book
 	if err := r.db.
 		WithContext(ctx).
+		Limit(limit).
+		Offset(offset).
 		Find(&books).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrBookNotFound
@@ -49,24 +51,38 @@ func (r *bookRepository) ReadById(ctx context.Context, id string) (*entities.Boo
 
 func (r *bookRepository) Update(ctx context.Context, book *entities.Book) (*entities.Book, error) {
 	var updatedBook entities.Book
-	err := r.db.
+	res := r.db.
 		WithContext(ctx).
 		Model(&entities.Book{}).
 		Where("id = ?", book.Id).
 		Updates(book).
-		Scan(&updatedBook).Error
+		Scan(&updatedBook)
 
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	if res.Error != nil {
+		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
 			return nil, ErrBookNotFound
 		}
 
-		return nil, err
+		return nil, res.Error
+	}
+
+	if res.RowsAffected == 0 {
+		return nil, ErrBookNotFound
 	}
 
 	return &updatedBook, nil
 }
 
 func (r *bookRepository) Delete(ctx context.Context, id string) error {
-	return r.db.WithContext(ctx).Delete(&entities.Book{Id: id}).Error
+	res := r.db.WithContext(ctx).Delete(&entities.Book{Id: id})
+
+	if res.Error != nil {
+		return res.Error
+	}
+
+	if res.RowsAffected == 0 {
+		return ErrBookNotFound
+	}
+
+	return nil
 }

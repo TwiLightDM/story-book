@@ -2,6 +2,7 @@ package userservice
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"story-book/internal/dto"
 	"story-book/internal/entities"
@@ -37,6 +38,7 @@ func NewUserHandler(service UserService) *UserHandler {
 // @Param request body dto.UserRequest true "Данные входа"
 // @Success 200 {object} dto.LoginResponse
 // @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /auth/login [post]
 func (h *UserHandler) Login(c echo.Context) error {
@@ -50,6 +52,9 @@ func (h *UserHandler) Login(c echo.Context) error {
 
 	accessToken, refreshToken, err := h.service.Login(ctx, request.Email, request.Password)
 	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: err.Error()})
+		}
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
@@ -162,6 +167,7 @@ func (h *UserHandler) ResetPassword(c echo.Context) error {
 // @Produce json
 // @Success 200 {object} dto.UserResponse
 // @Failure 401 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /users/me [get]
 func (h *UserHandler) ReadSelf(c echo.Context) error {
@@ -175,6 +181,9 @@ func (h *UserHandler) ReadSelf(c echo.Context) error {
 
 	user, err := h.service.ReedUserById(ctx, id)
 	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: err.Error()})
+		}
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
@@ -200,6 +209,7 @@ func (h *UserHandler) ReadSelf(c echo.Context) error {
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 401 {object} dto.ErrorResponse
 // @Failure 403 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /users/{id} [get]
 func (h *UserHandler) ReadUser(c echo.Context) error {
@@ -221,6 +231,9 @@ func (h *UserHandler) ReadUser(c echo.Context) error {
 
 	user, err := h.service.ReedUserById(ctx, id)
 	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: err.Error()})
+		}
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
@@ -245,6 +258,7 @@ func (h *UserHandler) ReadUser(c echo.Context) error {
 // @Success 200 {object} dto.UserResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 401 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /users/me [put]
 func (h *UserHandler) UpdateUser(c echo.Context) error {
@@ -272,6 +286,9 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 		Points:   0,
 	})
 	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: err.Error()})
+		}
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
@@ -329,6 +346,7 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 // @Security BearerAuth
 // @Success 204
 // @Failure 401 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /users/me [delete]
 func (h *UserHandler) DeleteUser(c echo.Context) error {
@@ -342,6 +360,9 @@ func (h *UserHandler) DeleteUser(c echo.Context) error {
 
 	err := h.service.DeleteUser(ctx, id)
 	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: err.Error()})
+		}
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 

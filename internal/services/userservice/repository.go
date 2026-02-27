@@ -48,13 +48,12 @@ func (r *userRepository) ReadById(ctx context.Context, id string) (*entities.Use
 }
 
 func (r *userRepository) Update(ctx context.Context, user *entities.User) (*entities.User, error) {
-	var updatedUser entities.User
 	err := r.db.
 		WithContext(ctx).
 		Model(&entities.User{}).
 		Where("id = ?", user.Id).
 		Updates(user).
-		Scan(&updatedUser).Error
+		Scan(&user).Error
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -64,7 +63,7 @@ func (r *userRepository) Update(ctx context.Context, user *entities.User) (*enti
 		return nil, err
 	}
 
-	return &updatedUser, nil
+	return user, nil
 }
 
 func (r *userRepository) Delete(ctx context.Context, id string) error {

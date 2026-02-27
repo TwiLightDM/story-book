@@ -89,7 +89,7 @@ func (s *userService) SignUp(ctx context.Context, user *entities.User) (*entitie
 	user.Id = uuid.NewString()
 	user.Password = hashedPassword
 	user.Salt = salt
-	user.Role = "client"
+	user.Role = "admin"
 
 	err = s.repo.Create(ctx, user)
 	if err != nil {

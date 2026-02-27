@@ -5,11 +5,11 @@ type BookRequest struct {
 	Author      string  `json:"author"`
 	Year        int     `json:"year"`
 	Cost        float64 `json:"cost"`
-	Discount    int     `json:"discount"`
+	Discount    *int    `json:"discount"`
 	Publisher   string  `json:"publisher"`
-	Description string  `json:"description"`
+	Description *string `json:"description"`
 	Amount      int     `json:"amount"`
-	Image       string  `json:"image"`
+	Image       *string `json:"image"`
 }
 
 type BookResponse struct {

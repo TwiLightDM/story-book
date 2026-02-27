@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"story-book/internal/dto"
 	"story-book/internal/entities"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 
 type BookService interface {
 	CreateBook(ctx context.Context, book *entities.Book) (*entities.Book, error)
-	ReadBooks(ctx context.Context) ([]entities.Book, error)
+	ReadBooks(ctx context.Context, page, limit int) ([]entities.Book, error)
 	ReedBookById(ctx context.Context, id string) (*entities.Book, error)
 	UpdateBook(ctx context.Context, book *entities.Book) (*entities.Book, error)
 	DeleteBook(ctx context.Context, id string) error
@@ -55,24 +56,30 @@ func (h *BookHandler) CreateBook(c echo.Context) error {
 
 	var image []byte
 	var mime string
-	if request.Image != "" {
+	if request.Image != nil {
 		var err error
-		image, mime, err = fromStringToBytes(request.Image)
+		image, mime, err = fromStringToBytes(*request.Image)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid image"})
 		}
 	}
 
 	book := &entities.Book{
-		Title:       request.Title,
-		Author:      request.Author,
-		Year:        request.Year,
-		Cost:        request.Cost,
-		Discount:    &request.Discount,
-		Publisher:   request.Publisher,
-		Description: &request.Description,
-		ImageData:   image,
-		ImageMime:   mime,
+		Title:     request.Title,
+		Author:    request.Author,
+		Year:      request.Year,
+		Cost:      request.Cost,
+		Publisher: request.Publisher,
+		ImageData: image,
+		ImageMime: mime,
+	}
+
+	if request.Discount != nil {
+		book.Discount = request.Discount
+	}
+
+	if request.Description != nil {
+		book.Description = request.Description
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -104,6 +111,7 @@ func (h *BookHandler) CreateBook(c echo.Context) error {
 // @Produce json
 // @Success 200 {object} dto.BookResponse
 // @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /books/{id} [get]
 func (h *BookHandler) ReadBook(c echo.Context) error {
@@ -117,6 +125,9 @@ func (h *BookHandler) ReadBook(c echo.Context) error {
 
 	book, err := h.service.ReedBookById(ctx, id)
 	if err != nil {
+		if errors.Is(err, ErrBookNotFound) {
+			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: "book not found"})
+		}
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
@@ -138,15 +149,39 @@ func (h *BookHandler) ReadBook(c echo.Context) error {
 // @Summary Получить книги
 // @Tags books
 // @Produce json
+// @Param page query int false "Номер страницы (по умолчанию 1)"
+// @Param limit query int false "Количество записей на странице (по умолчанию 10)"
 // @Success 200 {object} dto.BookResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /books [get]
 func (h *BookHandler) ReadBooks(c echo.Context) error {
+	pageStr := c.QueryParam("page")
+	limitStr := c.QueryParam("limit")
+
+	page := 1
+	limit := 10
+
+	var err error
+
+	if pageStr != "" {
+		page, err = strconv.Atoi(pageStr)
+		if err != nil || page < 1 {
+			return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid page"})
+		}
+	}
+
+	if limitStr != "" {
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil || limit < 1 {
+			return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid limit"})
+		}
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	response, err := h.service.ReadBooks(ctx)
+	response, err := h.service.ReadBooks(ctx, page, limit)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
@@ -182,6 +217,7 @@ func (h *BookHandler) ReadBooks(c echo.Context) error {
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 401 {object} dto.ErrorResponse
 // @Failure 403 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /books/{id} [put]
 func (h *BookHandler) UpdateBook(c echo.Context) error {
@@ -195,7 +231,7 @@ func (h *BookHandler) UpdateBook(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
 	}
 
-	id := c.Get("id").(string)
+	id := c.Param("id")
 	if id == "" {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
 	}
@@ -205,28 +241,40 @@ func (h *BookHandler) UpdateBook(c echo.Context) error {
 
 	var image []byte
 	var mime string
-	if request.Image != "" {
+	if request.Image != nil {
 		var err error
-		image, mime, err = fromStringToBytes(request.Image)
+		image, mime, err = fromStringToBytes(*request.Image)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid image"})
 		}
 	}
 
-	book, err := h.service.UpdateBook(ctx, &entities.Book{
-		Id:          id,
-		Title:       request.Title,
-		Author:      request.Author,
-		Year:        request.Year,
-		Cost:        request.Cost,
-		Discount:    &request.Discount,
-		Publisher:   request.Publisher,
-		Description: &request.Description,
-		Amount:      request.Amount,
-		ImageData:   image,
-		ImageMime:   mime,
-	})
+	book := &entities.Book{
+		Id:        id,
+		Title:     request.Title,
+		Author:    request.Author,
+		Year:      request.Year,
+		Cost:      request.Cost,
+		Publisher: request.Publisher,
+		Amount:    request.Amount,
+		ImageData: image,
+		ImageMime: mime,
+	}
+
+	if request.Discount != nil {
+		book.Discount = request.Discount
+	}
+
+	if request.Description != nil {
+		book.Description = request.Description
+	}
+
+	book, err := h.service.UpdateBook(ctx, book)
+
 	if err != nil {
+		if errors.Is(err, ErrBookNotFound) {
+			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: "book not found"})
+		}
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
@@ -252,6 +300,7 @@ func (h *BookHandler) UpdateBook(c echo.Context) error {
 // @Success 204
 // @Failure 401 {object} dto.ErrorResponse
 // @Failure 403 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /books/{id} [delete]
 func (h *BookHandler) DeleteBook(c echo.Context) error {
@@ -270,6 +319,9 @@ func (h *BookHandler) DeleteBook(c echo.Context) error {
 
 	err := h.service.DeleteBook(ctx, id)
 	if err != nil {
+		if errors.Is(err, ErrBookNotFound) {
+			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: "book not found"})
+		}
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
