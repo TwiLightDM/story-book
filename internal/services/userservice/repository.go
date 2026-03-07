@@ -67,5 +67,16 @@ func (r *userRepository) Update(ctx context.Context, user *entities.User) (*enti
 }
 
 func (r *userRepository) Delete(ctx context.Context, id string) error {
-	return r.db.WithContext(ctx).Delete(&entities.User{Id: id}).Error
+	result := r.db.WithContext(ctx).
+		Delete(&entities.User{Id: id})
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return ErrUserNotFound
+	}
+
+	return nil
 }

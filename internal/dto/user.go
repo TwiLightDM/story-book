@@ -10,6 +10,11 @@ type UserRequest struct {
 	Answer   string `json:"answer"`
 }
 
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 type UserResponse struct {
 	Id       string `json:"id"`
 	Name     string `json:"name"`

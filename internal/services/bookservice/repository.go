@@ -20,16 +20,13 @@ func (r *bookRepository) Create(ctx context.Context, book *entities.Book) error 
 	return r.db.WithContext(ctx).Create(book).Error
 }
 
-func (r *bookRepository) ReadAll(ctx context.Context, offset, limit int) ([]entities.Book, error) {
+func (r *bookRepository) ReadAll(ctx context.Context, limit, offset int) ([]entities.Book, error) {
 	var books []entities.Book
 	if err := r.db.
 		WithContext(ctx).
 		Limit(limit).
 		Offset(offset).
 		Find(&books).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrBookNotFound
-		}
 		return nil, err
 	}
 	return books, nil

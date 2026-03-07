@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"story-book/internal/dto"
 	"story-book/internal/entities"
-	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -35,22 +34,19 @@ func NewUserHandler(service UserService) *UserHandler {
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param request body dto.UserRequest true "Данные входа"
+// @Param request body dto.LoginRequest true "Данные входа"
 // @Success 200 {object} dto.LoginResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /auth/login [post]
 func (h *UserHandler) Login(c echo.Context) error {
-	var request dto.UserRequest
+	var request dto.LoginRequest
 	if err := c.Bind(&request); err != nil {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	accessToken, refreshToken, err := h.service.Login(ctx, request.Email, request.Password)
+	accessToken, refreshToken, err := h.service.Login(context.Background(), request.Email, request.Password)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: err.Error()})
@@ -80,10 +76,7 @@ func (h *UserHandler) SignUp(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	user, accessToken, refreshToken, err := h.service.SignUp(ctx, &entities.User{
+	user, accessToken, refreshToken, err := h.service.SignUp(context.Background(), &entities.User{
 		Name:     request.Name,
 		Surname:  request.Surname,
 		Email:    request.Email,
@@ -140,19 +133,23 @@ func (h *UserHandler) Refresh(c echo.Context) error {
 // @Summary Сброс пароля
 // @Tags auth
 // @Security BearerAuth
-// @Param answer query string true "Ответ на секретный вопрос"
+// @Accept json
+// @Param request body dto.UserRequest true "Ответ на секретный вопрос"
 // @Success 204
+// @Failure 400 {object} dto.ErrorResponse
 // @Failure 401 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /auth/reset-password [post]
 func (h *UserHandler) ResetPassword(c echo.Context) error {
 	id := c.Get("id").(string)
-	answer := c.QueryParam("answer")
+	var request dto.UserRequest
+	if err := c.Bind(&request); err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
+	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	answer := request.Answer
 
-	err := h.service.ResetPassword(ctx, id, answer)
+	err := h.service.ResetPassword(context.Background(), id, answer)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
@@ -166,6 +163,7 @@ func (h *UserHandler) ResetPassword(c echo.Context) error {
 // @Security BearerAuth
 // @Produce json
 // @Success 200 {object} dto.UserResponse
+// @Failure 400 {object} dto.ErrorResponse
 // @Failure 401 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
@@ -176,10 +174,7 @@ func (h *UserHandler) ReadSelf(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	user, err := h.service.ReedUserById(ctx, id)
+	user, err := h.service.ReedUserById(context.Background(), id)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: err.Error()})
@@ -226,10 +221,7 @@ func (h *UserHandler) ReadUser(c echo.Context) error {
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	user, err := h.service.ReedUserById(ctx, id)
+	user, err := h.service.ReedUserById(context.Background(), id)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: err.Error()})
@@ -272,10 +264,7 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	user, err := h.service.UpdateUser(ctx, &entities.User{
+	user, err := h.service.UpdateUser(context.Background(), &entities.User{
 		Id:       id,
 		Name:     request.Name,
 		Surname:  request.Surname,
@@ -313,6 +302,7 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 // @Success 204
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 401 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /users/me/password [patch]
 func (h *UserHandler) ChangePassword(c echo.Context) error {
@@ -326,14 +316,14 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	err := h.service.UpdatePassword(ctx, &entities.User{
+	err := h.service.UpdatePassword(context.Background(), &entities.User{
 		Id:       id,
 		Password: request.Password,
 	})
 	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: err.Error()})
+		}
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
@@ -345,6 +335,7 @@ func (h *UserHandler) ChangePassword(c echo.Context) error {
 // @Tags users
 // @Security BearerAuth
 // @Success 204
+// @Failure 400 {object} dto.ErrorResponse
 // @Failure 401 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
@@ -355,10 +346,7 @@ func (h *UserHandler) DeleteUser(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	err := h.service.DeleteUser(ctx, id)
+	err := h.service.DeleteUser(context.Background(), id)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: err.Error()})

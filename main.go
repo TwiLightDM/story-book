@@ -10,7 +10,6 @@ import (
 // @version 1.0
 // @description API для пользователей Story Book
 // @BasePath /
-// @schemes http
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization

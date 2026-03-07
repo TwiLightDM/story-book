@@ -1,5 +1,12 @@
 basePath: /
 definitions:
+  dto.BookListResponse:
+    properties:
+      books:
+        items:
+          $ref: '#/definitions/dto.BookResponse'
+        type: array
+    type: object
   dto.BookRequest:
     properties:
       amount:
@@ -47,6 +54,18 @@ definitions:
   dto.ErrorResponse:
     properties:
       error:
+        type: string
+    type: object
+  dto.FavouriteRequest:
+    properties:
+      book_id:
+        type: string
+    type: object
+  dto.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
         type: string
     type: object
   dto.LoginResponse:
@@ -117,7 +136,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.UserRequest'
+          $ref: '#/definitions/dto.LoginRequest'
       produces:
       - application/json
       responses:
@@ -164,15 +183,22 @@ paths:
       - auth
   /auth/reset-password:
     post:
+      consumes:
+      - application/json
       parameters:
       - description: Ответ на секретный вопрос
-        in: query
-        name: answer
+        in: body
+        name: request
         required: true
-        type: string
+        schema:
+          $ref: '#/definitions/dto.UserRequest'
       responses:
         "204":
           description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
@@ -217,13 +243,22 @@ paths:
       - auth
   /books:
     get:
+      parameters:
+      - description: Количество записей на странице (по умолчанию 10)
+        in: query
+        name: limit
+        type: integer
+      - description: Количество пропускаемых записей (по умолчанию 0)
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.BookResponse'
+            $ref: '#/definitions/dto.BookListResponse'
         "400":
           description: Bad Request
           schema:
@@ -248,8 +283,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             $ref: '#/definitions/dto.BookResponse'
         "400":
@@ -284,6 +319,10 @@ paths:
       responses:
         "204":
           description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
@@ -381,6 +420,105 @@ paths:
       summary: Обновить книгу
       tags:
       - books
+  /favourites:
+    get:
+      parameters:
+      - description: Количество записей на странице (по умолчанию 10)
+        in: query
+        name: limit
+        type: integer
+      - description: Количество пропускаемых записей (по умолчанию 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.BookListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получить список избранных книг пользователя
+      tags:
+      - favourites
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные избранного
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.FavouriteRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Добавить книгу в избранное
+      tags:
+      - favourites
+  /favourites/{book_id}:
+    delete:
+      parameters:
+      - description: ID книги
+        in: path
+        name: book_id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удалить книгу из избранного
+      tags:
+      - favourites
   /users/{id}:
     get:
       parameters:
@@ -426,6 +564,10 @@ paths:
       responses:
         "204":
           description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
@@ -451,6 +593,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/dto.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
@@ -528,6 +674,10 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -537,8 +687,6 @@ paths:
       summary: Изменить пароль
       tags:
       - users
-schemes:
-- http
 securityDefinitions:
   BearerAuth:
     in: header

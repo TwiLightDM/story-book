@@ -10,6 +10,7 @@ import (
 	"story-book/internal/config"
 	"story-book/internal/middlewares"
 	"story-book/internal/services/bookservice"
+	"story-book/internal/services/favouriteservice"
 	"story-book/internal/services/userservice"
 	"story-book/package/databases/postgres"
 	"story-book/package/services/encryptservice"
@@ -51,7 +52,11 @@ func Run(cfg *config.Config) error {
 	bookService := bookservice.NewBookService(bookRepository)
 	bookHandler := bookservice.NewBookHandler(bookService)
 
-	registerRoutes(e, authMiddleware, userHandler, bookHandler)
+	favouriteRepository := favouriteservice.NewFavouriteRepository(db)
+	favouriteService := favouriteservice.NewFavouriteService(favouriteRepository)
+	favouriteHandler := favouriteservice.NewFavouriteHandler(favouriteService)
+
+	registerRoutes(e, authMiddleware, userHandler, bookHandler, favouriteHandler)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.BackendPort,
@@ -97,6 +102,7 @@ func registerRoutes(e *echo.Echo,
 	authMiddleware echo.MiddlewareFunc,
 	userHandler *userservice.UserHandler,
 	bookHandler *bookservice.BookHandler,
+	favouriteHandler *favouriteservice.FavouriteHandler,
 ) {
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
@@ -119,4 +125,9 @@ func registerRoutes(e *echo.Echo,
 	books.GET("/:id", bookHandler.ReadBook)
 	books.PUT("/:id", bookHandler.UpdateBook, authMiddleware)
 	books.DELETE("/:id", bookHandler.DeleteBook, authMiddleware)
+
+	favourites := e.Group("/favourites", authMiddleware)
+	favourites.POST("", favouriteHandler.CreateFavourite)
+	favourites.GET("", favouriteHandler.ReadFavourites)
+	favourites.DELETE("/:book_id", favouriteHandler.DeleteFavourite)
 }

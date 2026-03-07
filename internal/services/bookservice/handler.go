@@ -2,13 +2,12 @@ package bookservice
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"net/http"
 	"story-book/internal/dto"
 	"story-book/internal/entities"
+	"story-book/package/services/helperservice"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -16,7 +15,7 @@ import (
 
 type BookService interface {
 	CreateBook(ctx context.Context, book *entities.Book) (*entities.Book, error)
-	ReadBooks(ctx context.Context, page, limit int) ([]entities.Book, error)
+	ReadBooks(ctx context.Context, limit, offset int) ([]entities.Book, error)
 	ReedBookById(ctx context.Context, id string) (*entities.Book, error)
 	UpdateBook(ctx context.Context, book *entities.Book) (*entities.Book, error)
 	DeleteBook(ctx context.Context, id string) error
@@ -37,7 +36,7 @@ func NewBookHandler(service BookService) *BookHandler {
 // @Accept json
 // @Produce json
 // @Param request body dto.BookRequest true "Данные книги"
-// @Success 200 {object} dto.BookResponse
+// @Success 201 {object} dto.BookResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 401 {object} dto.ErrorResponse
 // @Failure 403 {object} dto.ErrorResponse
@@ -58,7 +57,7 @@ func (h *BookHandler) CreateBook(c echo.Context) error {
 	var mime string
 	if request.Image != nil {
 		var err error
-		image, mime, err = fromStringToBytes(*request.Image)
+		image, mime, err = helperservice.FromStringToBytes(*request.Image)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid image"})
 		}
@@ -90,17 +89,17 @@ func (h *BookHandler) CreateBook(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
-	return c.JSON(http.StatusOK, dto.BookResponse{
+	return c.JSON(http.StatusCreated, dto.BookResponse{
 		Id:          book.Id,
 		Title:       book.Title,
 		Author:      book.Author,
 		Year:        book.Year,
 		Cost:        book.Cost,
-		Discount:    validate(book.Discount),
+		Discount:    helperservice.Validate(book.Discount),
 		Publisher:   book.Publisher,
-		Description: validate(book.Description),
+		Description: helperservice.Validate(book.Description),
 		Amount:      book.Amount,
-		Image:       fromBytesToString(book.ImageData, book.ImageMime),
+		Image:       helperservice.FromBytesToString(book.ImageData, book.ImageMime),
 	})
 }
 
@@ -120,13 +119,10 @@ func (h *BookHandler) ReadBook(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	book, err := h.service.ReedBookById(ctx, id)
+	book, err := h.service.ReedBookById(context.Background(), id)
 	if err != nil {
 		if errors.Is(err, ErrBookNotFound) {
-			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: "book not found"})
+			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: err.Error()})
 		}
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
@@ -137,11 +133,11 @@ func (h *BookHandler) ReadBook(c echo.Context) error {
 		Author:      book.Author,
 		Year:        book.Year,
 		Cost:        book.Cost,
-		Discount:    validate(book.Discount),
+		Discount:    helperservice.Validate(book.Discount),
 		Publisher:   book.Publisher,
-		Description: validate(book.Description),
+		Description: helperservice.Validate(book.Description),
 		Amount:      book.Amount,
-		Image:       fromBytesToString(book.ImageData, book.ImageMime),
+		Image:       helperservice.FromBytesToString(book.ImageData, book.ImageMime),
 	})
 }
 
@@ -149,27 +145,20 @@ func (h *BookHandler) ReadBook(c echo.Context) error {
 // @Summary Получить книги
 // @Tags books
 // @Produce json
-// @Param page query int false "Номер страницы (по умолчанию 1)"
 // @Param limit query int false "Количество записей на странице (по умолчанию 10)"
-// @Success 200 {object} dto.BookResponse
+// @Param offset query int false "Количество пропускаемых записей (по умолчанию 0)"
+// @Success 200 {object} dto.BookListResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /books [get]
 func (h *BookHandler) ReadBooks(c echo.Context) error {
-	pageStr := c.QueryParam("page")
 	limitStr := c.QueryParam("limit")
+	offsetStr := c.QueryParam("offset")
 
-	page := 1
 	limit := 10
+	offset := 0
 
 	var err error
-
-	if pageStr != "" {
-		page, err = strconv.Atoi(pageStr)
-		if err != nil || page < 1 {
-			return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid page"})
-		}
-	}
 
 	if limitStr != "" {
 		limit, err = strconv.Atoi(limitStr)
@@ -178,15 +167,20 @@ func (h *BookHandler) ReadBooks(c echo.Context) error {
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	if offsetStr != "" {
+		offset, err = strconv.Atoi(offsetStr)
+		if err != nil || offset < 0 {
+			return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid offset"})
+		}
+	}
 
-	response, err := h.service.ReadBooks(ctx, page, limit)
+	response, err := h.service.ReadBooks(context.Background(), limit, offset)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
-	books := make([]dto.BookResponse, len(response))
+	books := make([]dto.BookResponse, 0, len(response))
+
 	for _, book := range response {
 		books = append(books, dto.BookResponse{
 			Id:          book.Id,
@@ -194,15 +188,17 @@ func (h *BookHandler) ReadBooks(c echo.Context) error {
 			Author:      book.Author,
 			Year:        book.Year,
 			Cost:        book.Cost,
-			Discount:    validate(book.Discount),
+			Discount:    helperservice.Validate(book.Discount),
 			Publisher:   book.Publisher,
-			Description: validate(book.Description),
+			Description: helperservice.Validate(book.Description),
 			Amount:      book.Amount,
-			Image:       fromBytesToString(book.ImageData, book.ImageMime),
+			Image:       helperservice.FromBytesToString(book.ImageData, book.ImageMime),
 		})
 	}
 
-	return c.JSON(http.StatusOK, books)
+	return c.JSON(http.StatusOK, dto.BookListResponse{
+		Books: books,
+	})
 }
 
 // UpdateBook
@@ -236,14 +232,11 @@ func (h *BookHandler) UpdateBook(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 500000*time.Second)
-	defer cancel()
-
 	var image []byte
 	var mime string
 	if request.Image != nil {
 		var err error
-		image, mime, err = fromStringToBytes(*request.Image)
+		image, mime, err = helperservice.FromStringToBytes(*request.Image)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid image"})
 		}
@@ -269,11 +262,11 @@ func (h *BookHandler) UpdateBook(c echo.Context) error {
 		book.Description = request.Description
 	}
 
-	book, err := h.service.UpdateBook(ctx, book)
+	book, err := h.service.UpdateBook(context.Background(), book)
 
 	if err != nil {
 		if errors.Is(err, ErrBookNotFound) {
-			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: "book not found"})
+			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: err.Error()})
 		}
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
@@ -284,11 +277,11 @@ func (h *BookHandler) UpdateBook(c echo.Context) error {
 		Author:      book.Author,
 		Year:        book.Year,
 		Cost:        book.Cost,
-		Discount:    validate(book.Discount),
+		Discount:    helperservice.Validate(book.Discount),
 		Publisher:   book.Publisher,
-		Description: validate(book.Description),
+		Description: helperservice.Validate(book.Description),
 		Amount:      book.Amount,
-		Image:       fromBytesToString(book.ImageData, book.ImageMime),
+		Image:       helperservice.FromBytesToString(book.ImageData, book.ImageMime),
 	})
 }
 
@@ -298,6 +291,7 @@ func (h *BookHandler) UpdateBook(c echo.Context) error {
 // @Security BearerAuth
 // @Param id path string true "ID книги"
 // @Success 204
+// @Failure 400 {object} dto.ErrorResponse
 // @Failure 401 {object} dto.ErrorResponse
 // @Failure 403 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
@@ -326,52 +320,4 @@ func (h *BookHandler) DeleteBook(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusNoContent)
-}
-
-func validate[T any](t *T) T {
-	if t != nil {
-		return *t
-	}
-
-	var zero T
-	return zero
-}
-
-func fromBytesToString(b []byte, mime string) string {
-	if b == nil {
-		return ""
-	}
-	if mime == "" {
-		mime = "image/png"
-	}
-	return "data:" + mime + ";base64," +
-		base64.StdEncoding.EncodeToString(b)
-}
-
-func fromStringToBytes(str string) ([]byte, string, error) {
-	if str == "" {
-		return nil, "", nil
-	}
-
-	const prefix = "data:"
-	if !strings.HasPrefix(str, prefix) {
-		b, err := base64.StdEncoding.DecodeString(str)
-		return b, "", err
-	}
-
-	parts := strings.SplitN(str, ",", 2)
-	if len(parts) != 2 {
-		return nil, "", errors.New("invalid data url")
-	}
-
-	meta := parts[0]
-	data := parts[1]
-
-	mime := ""
-	if strings.Contains(meta, ";") {
-		mime = strings.TrimPrefix(strings.Split(meta, ";")[0], "data:")
-	}
-
-	b, err := base64.StdEncoding.DecodeString(data)
-	return b, mime, err
 }

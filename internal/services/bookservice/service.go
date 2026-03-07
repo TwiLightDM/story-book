@@ -10,7 +10,7 @@ import (
 
 type BookRepository interface {
 	Create(ctx context.Context, book *entities.Book) error
-	ReadAll(ctx context.Context, offset, limit int) ([]entities.Book, error)
+	ReadAll(ctx context.Context, limit, offset int) ([]entities.Book, error)
 	ReadById(ctx context.Context, id string) (*entities.Book, error)
 	Update(ctx context.Context, book *entities.Book) (*entities.Book, error)
 	Delete(ctx context.Context, id string) error
@@ -44,9 +44,9 @@ func (s *bookService) ReedBookById(ctx context.Context, id string) (*entities.Bo
 	return book, nil
 }
 
-func (s *bookService) ReadBooks(ctx context.Context, page, limit int) ([]entities.Book, error) {
+func (s *bookService) ReadBooks(ctx context.Context, limit, offset int) ([]entities.Book, error) {
 	fmt.Println(uuid.NewString())
-	books, err := s.repo.ReadAll(ctx, (page-1)*limit, limit)
+	books, err := s.repo.ReadAll(ctx, limit, offset)
 	if err != nil {
 		return nil, err
 	}
