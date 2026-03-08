@@ -3,6 +3,7 @@ package bookservice
 import (
 	"context"
 	"errors"
+	"fmt"
 	"story-book/internal/entities"
 
 	"gorm.io/gorm"
@@ -25,12 +26,17 @@ func (r *bookRepository) ReadAll(ctx context.Context, limit, offset int) ([]enti
 
 	if err := r.db.
 		WithContext(ctx).
+		Model(&entities.Book{}).
+		Select("books.*, COALESCE(AVG(ratings.stars), 0) as rating").
+		Joins("LEFT JOIN ratings ON ratings.book_id = books.id").
+		Group("books.id").
 		Limit(limit).
 		Offset(offset).
 		Preload("Genres", func(db *gorm.DB) *gorm.DB {
 			return db.Select("genre", "book_id")
 		}).
 		Find(&books).Error; err != nil {
+
 		return nil, err
 	}
 
@@ -42,16 +48,24 @@ func (r *bookRepository) ReadById(ctx context.Context, id string) (*entities.Boo
 
 	if err := r.db.
 		WithContext(ctx).
+		Model(&entities.Book{}).
+		Select("books.*, COALESCE(AVG(ratings.stars), 0) as rating").
+		Joins("LEFT JOIN ratings ON ratings.book_id = books.id").
+		Where("books.id = ?", id).
+		Group("books.id").
 		Preload("Genres", func(db *gorm.DB) *gorm.DB {
 			return db.Select("genre", "book_id")
 		}).
-		First(&book, "id = ?", id).Error; err != nil {
+		First(&book).Error; err != nil {
 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrBookNotFound
 		}
 		return nil, err
 	}
+
+	fmt.Println(book.Rating)
+	fmt.Println("///////")
 
 	return &book, nil
 }

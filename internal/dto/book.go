@@ -23,6 +23,7 @@ type BookResponse struct {
 	Description string          `json:"description,omitempty"`
 	Amount      int             `json:"amount"`
 	Image       string          `json:"image,omitempty"`
+	Rating      float64         `json:"rating"`
 	Genres      []GenreResponse `json:"genres,omitempty"`
 }
 

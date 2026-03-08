@@ -7,7 +7,6 @@ import (
 	"story-book/internal/dto"
 	"story-book/internal/entities"
 	"story-book/package/services/helperservice"
-	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -85,10 +84,7 @@ func (h *BookHandler) CreateBook(c echo.Context) error {
 		book.Description = request.Description
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	book, err := h.service.CreateBook(ctx, book)
+	book, err := h.service.CreateBook(context.Background(), book)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
@@ -150,6 +146,7 @@ func (h *BookHandler) ReadBook(c echo.Context) error {
 		Amount:      book.Amount,
 		Image:       helperservice.FromBytesToString(book.ImageData, book.ImageMime),
 		Genres:      genres,
+		Rating:      book.Rating,
 	})
 }
 
@@ -196,6 +193,7 @@ func (h *BookHandler) ReadBooks(c echo.Context) error {
 			Amount:      book.Amount,
 			Image:       helperservice.FromBytesToString(book.ImageData, book.ImageMime),
 			Genres:      genres,
+			Rating:      book.Rating,
 		})
 	}
 
@@ -319,10 +317,7 @@ func (h *BookHandler) DeleteBook(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	err := h.service.DeleteBook(ctx, id)
+	err := h.service.DeleteBook(context.Background(), id)
 	if err != nil {
 		if errors.Is(err, ErrBookNotFound) {
 			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: "book not found"})

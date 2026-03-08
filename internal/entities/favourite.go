@@ -2,8 +2,6 @@ package entities
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type Favourite struct {
@@ -11,5 +9,4 @@ type Favourite struct {
 	BookId    string
 	UserId    string
 	CreatedAt time.Time
-	DeletedAt gorm.DeletedAt
 }

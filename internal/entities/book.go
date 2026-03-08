@@ -20,5 +20,6 @@ type Book struct {
 	ImageMime   string
 	CreatedAt   time.Time
 	DeletedAt   gorm.DeletedAt
+	Rating      float64 `gorm:"->"`
 	Genres      []Genre `gorm:"foreignKey:BookId"`
 }

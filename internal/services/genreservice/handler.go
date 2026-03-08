@@ -2,10 +2,10 @@ package genreservice
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"story-book/internal/dto"
 	"story-book/internal/entities"
-	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -52,10 +52,7 @@ func (h *GenreHandler) CreateGenre(c echo.Context) error {
 		BookId: request.BookId,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	err := h.service.CreateGenre(ctx, genre)
+	err := h.service.CreateGenre(context.Background(), genre)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
@@ -93,11 +90,11 @@ func (h *GenreHandler) DeleteGenre(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	err := h.service.DeleteGenre(ctx, request.Genre, bookId)
+	err := h.service.DeleteGenre(context.Background(), request.Genre, bookId)
 	if err != nil {
+		if errors.Is(err, ErrGenreNotFound) {
+			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: err.Error()})
+		}
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 

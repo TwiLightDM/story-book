@@ -50,10 +50,7 @@ func (h *FavouriteHandler) CreateFavourite(c echo.Context) error {
 		UserId: userId,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	err := h.service.CreateFavourite(ctx, favourite)
+	err := h.service.CreateFavourite(context.Background(), favourite)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
@@ -80,10 +77,8 @@ func (h *FavouriteHandler) ReadFavourites(c echo.Context) error {
 	}
 
 	userId := c.Get("id").(string)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 
-	response, err := h.service.ReadFavourites(ctx, userId, limit, offset)
+	response, err := h.service.ReadFavourites(context.Background(), userId, limit, offset)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
