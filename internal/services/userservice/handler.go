@@ -13,6 +13,7 @@ import (
 type UserService interface {
 	Login(ctx context.Context, email, password string) (string, string, error)
 	SignUp(ctx context.Context, user *entities.User) (*entities.User, string, string, error)
+	SignUpAdmin(ctx context.Context, user *entities.User) (*entities.User, string, string, error)
 	ReedUserById(ctx context.Context, id string) (*entities.User, error)
 	UpdateUser(ctx context.Context, user *entities.User) (*entities.User, error)
 	UpdatePassword(ctx context.Context, user *entities.User) error
@@ -77,6 +78,60 @@ func (h *UserHandler) SignUp(c echo.Context) error {
 	}
 
 	user, accessToken, refreshToken, err := h.service.SignUp(context.Background(), &entities.User{
+		Name:     request.Name,
+		Surname:  request.Surname,
+		Email:    request.Email,
+		Phone:    request.Phone,
+		Password: request.Password,
+		Question: request.Question,
+		Answer:   request.Answer,
+	})
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
+	}
+
+	return c.JSON(http.StatusCreated, dto.SignUpResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		User: dto.UserResponse{
+			Id:       user.Id,
+			Name:     user.Name,
+			Surname:  user.Surname,
+			Email:    user.Email,
+			Phone:    user.Phone,
+			Role:     user.Role,
+			Question: user.Question,
+			Points:   user.Points,
+		},
+	})
+}
+
+// SignUpAdmin
+// @Summary Регистрация администратора
+// @Tags auth
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body dto.UserRequest true "Данные регистрации"
+// @Success 201 {object} dto.SignUpResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Failure 403 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /auth/admin [post]
+func (h *UserHandler) SignUpAdmin(c echo.Context) error {
+	role := c.Get("role").(string)
+	if role != "super_admin" {
+		return c.JSON(http.StatusForbidden, dto.ErrorResponse{Error: "access denied"})
+	}
+
+	var request dto.UserRequest
+	if err := c.Bind(&request); err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid request"})
+	}
+
+	user, accessToken, refreshToken, err := h.service.SignUpAdmin(context.Background(), &entities.User{
 		Name:     request.Name,
 		Surname:  request.Surname,
 		Email:    request.Email,

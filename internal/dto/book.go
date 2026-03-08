@@ -13,16 +13,17 @@ type BookRequest struct {
 }
 
 type BookResponse struct {
-	Id          string  `json:"id"`
-	Title       string  `json:"title"`
-	Author      string  `json:"author"`
-	Year        int     `json:"year"`
-	Cost        float64 `json:"cost"`
-	Discount    int     `json:"discount,omitempty"`
-	Publisher   string  `json:"publisher"`
-	Description string  `json:"description,omitempty"`
-	Amount      int     `json:"amount"`
-	Image       string  `json:"image,omitempty"`
+	Id          string          `json:"id"`
+	Title       string          `json:"title"`
+	Author      string          `json:"author"`
+	Year        int             `json:"year"`
+	Cost        float64         `json:"cost"`
+	Discount    int             `json:"discount,omitempty"`
+	Publisher   string          `json:"publisher"`
+	Description string          `json:"description,omitempty"`
+	Amount      int             `json:"amount"`
+	Image       string          `json:"image,omitempty"`
+	Genres      []GenreResponse `json:"genres,omitempty"`
 }
 
 type BookListResponse struct {

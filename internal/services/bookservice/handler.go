@@ -7,7 +7,6 @@ import (
 	"story-book/internal/dto"
 	"story-book/internal/entities"
 	"story-book/package/services/helperservice"
-	"strconv"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -63,12 +62,17 @@ func (h *BookHandler) CreateBook(c echo.Context) error {
 		}
 	}
 
+	if request.Amount < 0 {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid amount"})
+	}
+
 	book := &entities.Book{
 		Title:     request.Title,
 		Author:    request.Author,
 		Year:      request.Year,
 		Cost:      request.Cost,
 		Publisher: request.Publisher,
+		Amount:    request.Amount,
 		ImageData: image,
 		ImageMime: mime,
 	}
@@ -127,6 +131,13 @@ func (h *BookHandler) ReadBook(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
+	genres := make([]dto.GenreResponse, 0, len(book.Genres))
+	for _, genre := range book.Genres {
+		genres = append(genres, dto.GenreResponse{
+			Genre: genre.Genre,
+		})
+	}
+
 	return c.JSON(http.StatusOK, dto.BookResponse{
 		Id:          book.Id,
 		Title:       book.Title,
@@ -138,6 +149,7 @@ func (h *BookHandler) ReadBook(c echo.Context) error {
 		Description: helperservice.Validate(book.Description),
 		Amount:      book.Amount,
 		Image:       helperservice.FromBytesToString(book.ImageData, book.ImageMime),
+		Genres:      genres,
 	})
 }
 
@@ -152,26 +164,9 @@ func (h *BookHandler) ReadBook(c echo.Context) error {
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /books [get]
 func (h *BookHandler) ReadBooks(c echo.Context) error {
-	limitStr := c.QueryParam("limit")
-	offsetStr := c.QueryParam("offset")
-
-	limit := 10
-	offset := 0
-
-	var err error
-
-	if limitStr != "" {
-		limit, err = strconv.Atoi(limitStr)
-		if err != nil || limit < 1 {
-			return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid limit"})
-		}
-	}
-
-	if offsetStr != "" {
-		offset, err = strconv.Atoi(offsetStr)
-		if err != nil || offset < 0 {
-			return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid offset"})
-		}
+	limit, offset, err := helperservice.GetLimitAndOffset(c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: err.Error()})
 	}
 
 	response, err := h.service.ReadBooks(context.Background(), limit, offset)
@@ -182,6 +177,13 @@ func (h *BookHandler) ReadBooks(c echo.Context) error {
 	books := make([]dto.BookResponse, 0, len(response))
 
 	for _, book := range response {
+		genres := make([]dto.GenreResponse, 0, len(book.Genres))
+		for _, genre := range book.Genres {
+			genres = append(genres, dto.GenreResponse{
+				Genre: genre.Genre,
+			})
+		}
+
 		books = append(books, dto.BookResponse{
 			Id:          book.Id,
 			Title:       book.Title,
@@ -193,6 +195,7 @@ func (h *BookHandler) ReadBooks(c echo.Context) error {
 			Description: helperservice.Validate(book.Description),
 			Amount:      book.Amount,
 			Image:       helperservice.FromBytesToString(book.ImageData, book.ImageMime),
+			Genres:      genres,
 		})
 	}
 
@@ -271,6 +274,13 @@ func (h *BookHandler) UpdateBook(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}
 
+	genres := make([]dto.GenreResponse, 0, len(book.Genres))
+	for _, genre := range book.Genres {
+		genres = append(genres, dto.GenreResponse{
+			Genre: genre.Genre,
+		})
+	}
+
 	return c.JSON(http.StatusOK, dto.BookResponse{
 		Id:          book.Id,
 		Title:       book.Title,
@@ -282,6 +292,7 @@ func (h *BookHandler) UpdateBook(c echo.Context) error {
 		Description: helperservice.Validate(book.Description),
 		Amount:      book.Amount,
 		Image:       helperservice.FromBytesToString(book.ImageData, book.ImageMime),
+		Genres:      genres,
 	})
 }
 

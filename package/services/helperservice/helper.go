@@ -3,7 +3,10 @@ package helperservice
 import (
 	"encoding/base64"
 	"errors"
+	"strconv"
 	"strings"
+
+	"github.com/labstack/echo/v4"
 )
 
 func Validate[T any](t *T) T {
@@ -52,4 +55,30 @@ func FromStringToBytes(str string) ([]byte, string, error) {
 
 	b, err := base64.StdEncoding.DecodeString(data)
 	return b, mime, err
+}
+
+func GetLimitAndOffset(c echo.Context) (int, int, error) {
+	limitStr := c.QueryParam("limit")
+	offsetStr := c.QueryParam("offset")
+
+	limit := 10
+	offset := 0
+
+	var err error
+
+	if limitStr != "" {
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil || limit < 1 {
+			return 0, 0, ErrInvalidLimit
+		}
+	}
+
+	if offsetStr != "" {
+		offset, err = strconv.Atoi(offsetStr)
+		if err != nil || offset < 0 {
+			return 0, 0, ErrInvalidOffset
+		}
+	}
+
+	return limit, offset, nil
 }

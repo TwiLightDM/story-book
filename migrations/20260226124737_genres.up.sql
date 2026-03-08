@@ -1,4 +1,4 @@
-create table genre_of_books(
+create table genres(
     id uuid primary key,
     genre varchar(30) not null,
     book_id uuid references books(id) not null,

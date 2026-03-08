@@ -1,0 +1,21 @@
+INSERT INTO users (id,
+                   name,
+                   surname,
+                   email,
+                   phone,
+                   password,
+                   salt,
+                   role,
+                   question,
+                   answer)
+VALUES (gen_random_uuid(),
+        'Super',
+        'Admin',
+        'admin@admin.admin',
+        '+77777777777',
+        '$2a$04$xag0goXVSGny8mnnYDCpE.CpJPL7a5WJlAPXpCFbeYYIAJj0eMu6K',
+           --Admin1!!
+        'bKMurMD6',
+        'super_admin',
+        'admin',
+        'admin');

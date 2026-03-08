@@ -89,6 +89,59 @@ func (s *userService) SignUp(ctx context.Context, user *entities.User) (*entitie
 	user.Id = uuid.NewString()
 	user.Password = hashedPassword
 	user.Salt = salt
+	user.Role = "client"
+
+	err = s.repo.Create(ctx, user)
+	if err != nil {
+		return nil, "", "", err
+	}
+
+	data := make(map[string]any)
+	data["id"] = user.Id
+	data["role"] = user.Role
+
+	accessToken, _, err := s.jwt.GenerateAccessJWT(data)
+	if err != nil {
+		return user, "", "", err
+	}
+
+	refreshToken, _, err := s.jwt.GenerateRefreshJWT(data)
+	if err != nil {
+		return user, "", "", err
+	}
+
+	return user, accessToken, refreshToken, nil
+}
+
+func (s *userService) SignUpAdmin(ctx context.Context, user *entities.User) (*entities.User, string, string, error) {
+	existing, err := s.repo.ReadByEmail(ctx, user.Email)
+	if err != nil {
+		if !errors.Is(err, ErrUserNotFound) {
+			return nil, "", "", err
+		}
+	}
+	if existing != nil {
+		return nil, "", "", ErrUserAlreadyExists
+	}
+
+	err = s.validate.IsValidEmail(user.Email)
+	if err != nil {
+		return nil, "", "", err
+	}
+
+	err = s.validate.IsStrongPassword(user.Password)
+	if err != nil {
+		return nil, "", "", err
+	}
+
+	hashedPassword, salt, err := s.encrypt.HashPassword(user.Password)
+	if err != nil {
+		return nil, "", "", err
+	}
+
+	user.Id = uuid.NewString()
+	user.Password = hashedPassword
+	user.Salt = salt
 	user.Role = "admin"
 
 	err = s.repo.Create(ctx, user)

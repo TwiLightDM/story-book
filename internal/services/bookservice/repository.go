@@ -22,27 +22,37 @@ func (r *bookRepository) Create(ctx context.Context, book *entities.Book) error 
 
 func (r *bookRepository) ReadAll(ctx context.Context, limit, offset int) ([]entities.Book, error) {
 	var books []entities.Book
+
 	if err := r.db.
 		WithContext(ctx).
 		Limit(limit).
 		Offset(offset).
+		Preload("Genres", func(db *gorm.DB) *gorm.DB {
+			return db.Select("genre", "book_id")
+		}).
 		Find(&books).Error; err != nil {
 		return nil, err
 	}
+
 	return books, nil
 }
 
 func (r *bookRepository) ReadById(ctx context.Context, id string) (*entities.Book, error) {
 	var book entities.Book
+
 	if err := r.db.
 		WithContext(ctx).
-		Where("id = ?", id).
-		First(&book).Error; err != nil {
+		Preload("Genres", func(db *gorm.DB) *gorm.DB {
+			return db.Select("genre", "book_id")
+		}).
+		First(&book, "id = ?", id).Error; err != nil {
+
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrBookNotFound
 		}
 		return nil, err
 	}
+
 	return &book, nil
 }
 

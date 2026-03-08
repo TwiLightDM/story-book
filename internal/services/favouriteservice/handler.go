@@ -6,7 +6,6 @@ import (
 	"story-book/internal/dto"
 	"story-book/internal/entities"
 	"story-book/package/services/helperservice"
-	"strconv"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -75,26 +74,9 @@ func (h *FavouriteHandler) CreateFavourite(c echo.Context) error {
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /favourites [get]
 func (h *FavouriteHandler) ReadFavourites(c echo.Context) error {
-	limitStr := c.QueryParam("limit")
-	offsetStr := c.QueryParam("offset")
-
-	limit := 10
-	offset := 0
-
-	var err error
-
-	if limitStr != "" {
-		limit, err = strconv.Atoi(limitStr)
-		if err != nil || limit < 1 {
-			return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid limit"})
-		}
-	}
-
-	if offsetStr != "" {
-		offset, err = strconv.Atoi(offsetStr)
-		if err != nil || offset < 0 {
-			return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "invalid offset"})
-		}
+	limit, offset, err := helperservice.GetLimitAndOffset(c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: err.Error()})
 	}
 
 	userId := c.Get("id").(string)

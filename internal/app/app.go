@@ -11,6 +11,7 @@ import (
 	"story-book/internal/middlewares"
 	"story-book/internal/services/bookservice"
 	"story-book/internal/services/favouriteservice"
+	"story-book/internal/services/genreservice"
 	"story-book/internal/services/userservice"
 	"story-book/package/databases/postgres"
 	"story-book/package/services/encryptservice"
@@ -52,11 +53,15 @@ func Run(cfg *config.Config) error {
 	bookService := bookservice.NewBookService(bookRepository)
 	bookHandler := bookservice.NewBookHandler(bookService)
 
+	genreRepository := genreservice.NewGenreRepository(db)
+	genreService := genreservice.NewGenreService(genreRepository)
+	genreHandler := genreservice.NewGenreHandler(genreService)
+
 	favouriteRepository := favouriteservice.NewFavouriteRepository(db)
 	favouriteService := favouriteservice.NewFavouriteService(favouriteRepository)
 	favouriteHandler := favouriteservice.NewFavouriteHandler(favouriteService)
 
-	registerRoutes(e, authMiddleware, userHandler, bookHandler, favouriteHandler)
+	registerRoutes(e, authMiddleware, userHandler, bookHandler, genreHandler, favouriteHandler)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.BackendPort,
@@ -102,6 +107,7 @@ func registerRoutes(e *echo.Echo,
 	authMiddleware echo.MiddlewareFunc,
 	userHandler *userservice.UserHandler,
 	bookHandler *bookservice.BookHandler,
+	genreHandler *genreservice.GenreHandler,
 	favouriteHandler *favouriteservice.FavouriteHandler,
 ) {
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
@@ -109,6 +115,7 @@ func registerRoutes(e *echo.Echo,
 	public := e.Group("/auth")
 	public.POST("/login", userHandler.Login)
 	public.POST("/signup", userHandler.SignUp)
+	public.POST("/admin", userHandler.SignUpAdmin, authMiddleware)
 	public.POST("/refresh", userHandler.Refresh, authMiddleware)
 	public.POST("/reset-password", userHandler.ResetPassword, authMiddleware)
 
@@ -125,6 +132,10 @@ func registerRoutes(e *echo.Echo,
 	books.GET("/:id", bookHandler.ReadBook)
 	books.PUT("/:id", bookHandler.UpdateBook, authMiddleware)
 	books.DELETE("/:id", bookHandler.DeleteBook, authMiddleware)
+
+	genres := e.Group("/genres", authMiddleware)
+	genres.POST("", genreHandler.CreateGenre)
+	genres.DELETE("/:book_id", genreHandler.DeleteGenre)
 
 	favourites := e.Group("/favourites", authMiddleware)
 	favourites.POST("", favouriteHandler.CreateFavourite)

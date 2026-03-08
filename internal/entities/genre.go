@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type GenreOfBook struct {
+type Genre struct {
 	Id        string
 	Genre     string
 	BookId    string

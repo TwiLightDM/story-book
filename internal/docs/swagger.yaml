@@ -40,6 +40,10 @@ definitions:
         type: string
       discount:
         type: integer
+      genres:
+        items:
+          $ref: '#/definitions/dto.GenreResponse'
+        type: array
       id:
         type: string
       image:
@@ -59,6 +63,18 @@ definitions:
   dto.FavouriteRequest:
     properties:
       book_id:
+        type: string
+    type: object
+  dto.GenreRequest:
+    properties:
+      book_id:
+        type: string
+      genre:
+        type: string
+    type: object
+  dto.GenreResponse:
+    properties:
+      genre:
         type: string
     type: object
   dto.LoginRequest:
@@ -126,6 +142,45 @@ info:
   title: Story Book API
   version: "1.0"
 paths:
+  /auth/admin:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные регистрации
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.SignUpResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Регистрация администратора
+      tags:
+      - auth
   /auth/login:
     post:
       consumes:
@@ -519,6 +574,87 @@ paths:
       summary: Удалить книгу из избранного
       tags:
       - favourites
+  /genres:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные жанра
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.GenreRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Добавить жанр к книге
+      tags:
+      - genres
+  /genres/{book_id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID жанра
+        in: path
+        name: book_id
+        required: true
+        type: string
+      - description: Данные жанра
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.GenreRequest'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удалить жанр книги
+      tags:
+      - genres
   /users/{id}:
     get:
       parameters:

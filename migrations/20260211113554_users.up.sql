@@ -4,7 +4,7 @@ create table users
     name       varchar(50)  not null,
     surname    varchar(50)  not null,
     email      varchar(50)  not null,
-    phone      varchar(11)  not null,
+    phone      varchar(14)  not null,
     password   varchar(100) not null,
     salt       varchar(20)  not null,
     role       varchar(20)  not null,
