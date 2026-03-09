@@ -85,6 +85,12 @@ func (h *FavouriteHandler) ReadFavourites(c echo.Context) error {
 
 	books := make([]dto.BookResponse, 0, len(response))
 	for _, book := range response {
+		genres := make([]dto.GenreResponse, 0, len(book.Genres))
+		for _, genre := range book.Genres {
+			genres = append(genres, dto.GenreResponse{
+				Genre: genre.Genre,
+			})
+		}
 		books = append(books, dto.BookResponse{
 			Id:          book.Id,
 			Title:       book.Title,
@@ -96,6 +102,8 @@ func (h *FavouriteHandler) ReadFavourites(c echo.Context) error {
 			Description: helperservice.Validate(book.Description),
 			Amount:      book.Amount,
 			Image:       helperservice.FromBytesToString(book.ImageData, book.ImageMime),
+			Genres:      genres,
+			Rating:      book.Rating,
 		})
 	}
 

@@ -11,6 +11,7 @@ import (
 	"story-book/internal/middlewares"
 	"story-book/internal/services/bookservice"
 	"story-book/internal/services/cardservice"
+	"story-book/internal/services/cartservice"
 	"story-book/internal/services/favouriteservice"
 	"story-book/internal/services/genreservice"
 	"story-book/internal/services/ratingservice"
@@ -76,7 +77,11 @@ func Run(cfg *config.Config) error {
 	cardService := cardservice.NewCardService(cardRepository)
 	cardHandler := cardservice.NewCardHandler(cardService)
 
-	registerRoutes(e, authMiddleware, userHandler, bookHandler, genreHandler, favouriteHandler, ratingHandler, shopHandler, cardHandler)
+	cartRepository := cartservice.NewCartRepository(db)
+	cartService := cartservice.NewCartService(cartRepository)
+	cartHandler := cartservice.NewCartHandler(cartService)
+
+	registerRoutes(e, authMiddleware, userHandler, bookHandler, genreHandler, favouriteHandler, ratingHandler, shopHandler, cardHandler, cartHandler)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.BackendPort,
@@ -127,6 +132,7 @@ func registerRoutes(e *echo.Echo,
 	ratingHandler *ratingservice.RatingHandler,
 	shopHandler *shopservice.ShopHandler,
 	cardHandler *cardservice.CardHandler,
+	cartHandler *cartservice.CartHandler,
 ) {
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
@@ -175,4 +181,10 @@ func registerRoutes(e *echo.Echo,
 	cards.POST("", cardHandler.CreateCard)
 	cards.GET("", cardHandler.ReadCards)
 	cards.DELETE("", cardHandler.DeleteCard)
+
+	carts := e.Group("/carts", authMiddleware)
+	carts.POST("", cartHandler.CreateCart)
+	carts.GET("", cartHandler.ReadCarts)
+	carts.PATCH("/:book_id", cartHandler.UpdateCart)
+	carts.DELETE("/:book_id", cartHandler.DeleteCart)
 }

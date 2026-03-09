@@ -78,6 +78,13 @@ definitions:
       number_of_card:
         type: string
     type: object
+  dto.CartRequest:
+    properties:
+      amount:
+        type: integer
+      book_id:
+        type: string
+    type: object
   dto.ErrorResponse:
     properties:
       error:
@@ -617,6 +624,168 @@ paths:
       summary: Создать карту
       tags:
       - cards
+  /carts:
+    get:
+      parameters:
+      - description: Количество записей на странице (по умолчанию 10)
+        in: query
+        name: limit
+        type: integer
+      - description: Количество пропускаемых записей (по умолчанию 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.BookListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получить список книг в корзине пользователя
+      tags:
+      - carts
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные для корзины
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CartRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Добавить книгу в корзину
+      tags:
+      - carts
+  /carts/{book_id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID книги
+        in: path
+        name: book_id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удалить книгу из корзины
+      tags:
+      - carts
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID книги
+        in: path
+        name: book_id
+        required: true
+        type: string
+      - description: Данные магазина
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновить количество книг в корзине
+      tags:
+      - carts
   /favourites:
     get:
       parameters:

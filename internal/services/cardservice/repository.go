@@ -22,6 +22,7 @@ func (r *cardRepository) Create(ctx context.Context, card *entities.Card) error 
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return ErrCardAlreadyExists
 		}
+		return err
 	}
 
 	return nil

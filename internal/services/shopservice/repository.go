@@ -22,6 +22,7 @@ func (r *shopRepository) Create(ctx context.Context, shop *entities.Shop) error 
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return ErrShopAlreadyExists
 		}
+		return err
 	}
 
 	return nil
