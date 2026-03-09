@@ -10,9 +10,11 @@ import (
 	"story-book/internal/config"
 	"story-book/internal/middlewares"
 	"story-book/internal/services/bookservice"
+	"story-book/internal/services/cardservice"
 	"story-book/internal/services/favouriteservice"
 	"story-book/internal/services/genreservice"
 	"story-book/internal/services/ratingservice"
+	"story-book/internal/services/shopservice"
 	"story-book/internal/services/userservice"
 	"story-book/package/databases/postgres"
 	"story-book/package/services/encryptservice"
@@ -66,7 +68,15 @@ func Run(cfg *config.Config) error {
 	ratingService := ratingservice.NewRatingService(ratingRepository)
 	ratingHandler := ratingservice.NewRatingHandler(ratingService)
 
-	registerRoutes(e, authMiddleware, userHandler, bookHandler, genreHandler, favouriteHandler, ratingHandler)
+	shopRepository := shopservice.NewShopRepository(db)
+	shopService := shopservice.NewShopService(shopRepository)
+	shopHandler := shopservice.NewShopHandler(shopService)
+
+	cardRepository := cardservice.NewCardRepository(db)
+	cardService := cardservice.NewCardService(cardRepository)
+	cardHandler := cardservice.NewCardHandler(cardService)
+
+	registerRoutes(e, authMiddleware, userHandler, bookHandler, genreHandler, favouriteHandler, ratingHandler, shopHandler, cardHandler)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.BackendPort,
@@ -115,6 +125,8 @@ func registerRoutes(e *echo.Echo,
 	genreHandler *genreservice.GenreHandler,
 	favouriteHandler *favouriteservice.FavouriteHandler,
 	ratingHandler *ratingservice.RatingHandler,
+	shopHandler *shopservice.ShopHandler,
+	cardHandler *cardservice.CardHandler,
 ) {
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
@@ -148,7 +160,19 @@ func registerRoutes(e *echo.Echo,
 	favourites.GET("", favouriteHandler.ReadFavourites)
 	favourites.DELETE("/:book_id", favouriteHandler.DeleteFavourite)
 
-	rating := e.Group("/ratings", authMiddleware)
-	rating.POST("", ratingHandler.CreateRating)
-	rating.DELETE("/:book_id", ratingHandler.DeleteRating)
+	ratings := e.Group("/ratings", authMiddleware)
+	ratings.POST("", ratingHandler.CreateRating)
+	ratings.DELETE("/:book_id", ratingHandler.DeleteRating)
+
+	shops := e.Group("/shops")
+	shops.POST("", shopHandler.CreateShop, authMiddleware)
+	shops.GET("", shopHandler.ReadShops)
+	shops.GET("/:id", shopHandler.ReadShop)
+	shops.PUT("/:id", shopHandler.UpdateShop, authMiddleware)
+	shops.DELETE("/:id", shopHandler.DeleteShop, authMiddleware)
+
+	cards := e.Group("/cards", authMiddleware)
+	cards.POST("", cardHandler.CreateCard)
+	cards.GET("", cardHandler.ReadCards)
+	cards.DELETE("", cardHandler.DeleteCard)
 }

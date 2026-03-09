@@ -320,7 +320,7 @@ func (h *BookHandler) DeleteBook(c echo.Context) error {
 	err := h.service.DeleteBook(context.Background(), id)
 	if err != nil {
 		if errors.Is(err, ErrBookNotFound) {
-			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: "book not found"})
+			return c.JSON(http.StatusNotFound, dto.ErrorResponse{Error: err.Error()})
 		}
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
 	}

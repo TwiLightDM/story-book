@@ -57,6 +57,27 @@ definitions:
       year:
         type: integer
     type: object
+  dto.CardListResponse:
+    properties:
+      cards:
+        items:
+          $ref: '#/definitions/dto.CardResponse'
+        type: array
+    type: object
+  dto.CardRequest:
+    properties:
+      cvv:
+        type: string
+      expiration_date:
+        type: string
+      number_of_card:
+        type: string
+    type: object
+  dto.CardResponse:
+    properties:
+      number_of_card:
+        type: string
+    type: object
   dto.ErrorResponse:
     properties:
       error:
@@ -99,6 +120,29 @@ definitions:
         type: string
       stars:
         type: integer
+    type: object
+  dto.ShopListResponse:
+    properties:
+      shops:
+        items:
+          $ref: '#/definitions/dto.ShopResponse'
+        type: array
+    type: object
+  dto.ShopRequest:
+    properties:
+      address:
+        type: string
+      name:
+        type: string
+    type: object
+  dto.ShopResponse:
+    properties:
+      address:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
     type: object
   dto.SignUpResponse:
     properties:
@@ -484,6 +528,95 @@ paths:
       summary: Обновить книгу
       tags:
       - books
+  /cards:
+    delete:
+      parameters:
+      - description: Номер карты для удаления
+        in: query
+        name: number_of_card
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удалить карту
+      tags:
+      - cards
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CardListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Получить магазины
+      tags:
+      - cards
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные карты
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CardRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.CardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Создать карту
+      tags:
+      - cards
   /favourites:
     get:
       parameters:
@@ -741,6 +874,180 @@ paths:
       summary: Удалить оценку
       tags:
       - ratings
+  /shops:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ShopListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Получить магазины
+      tags:
+      - shops
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные книги
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ShopRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.ShopResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Создать магазин
+      tags:
+      - shops
+  /shops/{id}:
+    delete:
+      parameters:
+      - description: ID магазина
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удалить магазин
+      tags:
+      - shops
+    get:
+      parameters:
+      - description: ID магазина
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ShopResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Получить магазин по ID
+      tags:
+      - shops
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID магазина
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Данные магазина
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ShopRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ShopResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновить магазин
+      tags:
+      - shops
   /users/{id}:
     get:
       parameters:

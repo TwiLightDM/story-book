@@ -3,7 +3,6 @@ package bookservice
 import (
 	"context"
 	"errors"
-	"fmt"
 	"story-book/internal/entities"
 
 	"gorm.io/gorm"
@@ -63,9 +62,6 @@ func (r *bookRepository) ReadById(ctx context.Context, id string) (*entities.Boo
 		}
 		return nil, err
 	}
-
-	fmt.Println(book.Rating)
-	fmt.Println("///////")
 
 	return &book, nil
 }
