@@ -18,6 +18,7 @@ type User struct {
 	Question  string
 	Answer    string
 	Points    int
+	Address   *string
 	CreatedAt time.Time
 	DeletedAt gorm.DeletedAt
 }

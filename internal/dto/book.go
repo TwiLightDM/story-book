@@ -17,11 +17,11 @@ type BookResponse struct {
 	Title       string          `json:"title"`
 	Author      string          `json:"author"`
 	Year        int             `json:"year"`
-	Cost        float64         `json:"cost"`
+	Cost        float64         `json:"cost,omitempty"`
 	Discount    int             `json:"discount,omitempty"`
 	Publisher   string          `json:"publisher"`
 	Description string          `json:"description,omitempty"`
-	Amount      int             `json:"amount"`
+	Amount      int             `json:"amount,omitempty"`
 	Image       string          `json:"image,omitempty"`
 	Rating      float64         `json:"rating"`
 	Genres      []GenreResponse `json:"genres,omitempty"`

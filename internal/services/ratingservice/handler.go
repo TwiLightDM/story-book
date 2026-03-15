@@ -67,7 +67,6 @@ func (h *RatingHandler) CreateRating(c echo.Context) error {
 // @Security BearerAuth
 // @Accept json
 // @Param book_id path string true "ID книги"
-// @Param request body dto.RatingRequest true "Данные рейтинга"
 // @Success 204 "No Content"
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 401 {object} dto.ErrorResponse

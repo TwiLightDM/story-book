@@ -3,11 +3,15 @@ package helperservice
 import (
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
+
+const layout = "2006-01-02"
 
 func Validate[T any](t *T) T {
 	if t != nil {
@@ -81,4 +85,34 @@ func GetLimitAndOffset(c echo.Context) (int, int, error) {
 	}
 
 	return limit, offset, nil
+}
+
+func GetStartAndEndDate(c echo.Context) (time.Time, time.Time, error) {
+	startDateStr := c.QueryParam("start_date")
+	endDateStr := c.QueryParam("end_date")
+
+	var startDate time.Time
+	var endDate time.Time
+	var err error
+
+	if startDateStr == "" {
+		startDate = time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC) // минимальная дата
+	} else {
+		startDate, err = time.Parse(layout, startDateStr)
+		if err != nil {
+			return time.Time{}, time.Time{}, fmt.Errorf("invalid start_date format, expected YYYY-MM-DD")
+		}
+	}
+
+	if endDateStr == "" {
+		endDate = time.Date(9999, 12, 31, 23, 59, 59, 999999999, time.UTC) // конец дня
+	} else {
+		endDate, err = time.Parse(layout, endDateStr)
+		if err != nil {
+			return time.Time{}, time.Time{}, fmt.Errorf("invalid end_date format, expected YYYY-MM-DD")
+		}
+		endDate = time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 23, 59, 59, 999999999, endDate.Location())
+	}
+
+	return startDate, endDate, nil
 }

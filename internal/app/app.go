@@ -12,8 +12,10 @@ import (
 	"story-book/internal/services/bookservice"
 	"story-book/internal/services/cardservice"
 	"story-book/internal/services/cartservice"
+	"story-book/internal/services/codeservice"
 	"story-book/internal/services/favouriteservice"
 	"story-book/internal/services/genreservice"
+	"story-book/internal/services/orderservice"
 	"story-book/internal/services/ratingservice"
 	"story-book/internal/services/shopservice"
 	"story-book/internal/services/userservice"
@@ -81,7 +83,27 @@ func Run(cfg *config.Config) error {
 	cartService := cartservice.NewCartService(cartRepository)
 	cartHandler := cartservice.NewCartHandler(cartService)
 
-	registerRoutes(e, authMiddleware, userHandler, bookHandler, genreHandler, favouriteHandler, ratingHandler, shopHandler, cardHandler, cartHandler)
+	codeRepository := codeservice.NewCodeRepository(db)
+	codeService := codeservice.NewCodeService(codeRepository)
+	codeHandler := codeservice.NewCodeHandler(codeService)
+
+	orderRepository := orderservice.NewOrderRepository(db)
+	orderService := orderservice.NewOrderService(orderRepository)
+	orderHandler := orderservice.NewOrderHandler(orderService)
+
+	registerRoutes(e,
+		authMiddleware,
+		userHandler,
+		bookHandler,
+		genreHandler,
+		favouriteHandler,
+		ratingHandler,
+		shopHandler,
+		cardHandler,
+		cartHandler,
+		codeHandler,
+		orderHandler,
+	)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.BackendPort,
@@ -133,6 +155,8 @@ func registerRoutes(e *echo.Echo,
 	shopHandler *shopservice.ShopHandler,
 	cardHandler *cardservice.CardHandler,
 	cartHandler *cartservice.CartHandler,
+	codeHandler *codeservice.CodeHandler,
+	orderHandler *orderservice.OrderHandler,
 ) {
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
@@ -187,4 +211,16 @@ func registerRoutes(e *echo.Echo,
 	carts.GET("", cartHandler.ReadCarts)
 	carts.PATCH("/:book_id", cartHandler.UpdateCart)
 	carts.DELETE("/:book_id", cartHandler.DeleteCart)
+
+	code := e.Group("/codes", authMiddleware)
+	code.POST("", codeHandler.CreateCode)
+	code.GET("", codeHandler.ReadCodes)
+	code.DELETE("/:id", codeHandler.DeleteCode)
+
+	orders := e.Group("/orders", authMiddleware)
+	orders.POST("", orderHandler.CreateOrder)
+	orders.GET("", orderHandler.ReadOrders)
+	orders.GET("/:id", orderHandler.ReadOrder)
+	orders.PATCH("/:id", orderHandler.UpdateOrder)
+	orders.PATCH("/pay/:id", orderHandler.PayOrder)
 }

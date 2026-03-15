@@ -65,7 +65,7 @@ func (h *CardHandler) CreateCard(c echo.Context) error {
 }
 
 // ReadCards
-// @Summary Получить магазины
+// @Summary Получить карты
 // @Tags cards
 // @Produce json
 // @Success 200 {object} dto.CardListResponse

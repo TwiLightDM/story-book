@@ -12,7 +12,7 @@ migrate-new:
 migrate:
 	$(MIGRATE) up
 migrate-down:
-	$(MIGRATE) down
+	$(MIGRATE) down 3
 migrate-force:
 	$(MIGRATE) force ${VERSION}
 

@@ -1,13 +1,14 @@
 package dto
 
 type UserRequest struct {
-	Name     string `json:"name"`
-	Surname  string `json:"surname"`
-	Email    string `json:"email"`
-	Phone    string `json:"phone"`
-	Password string `json:"password"`
-	Question string `json:"question"`
-	Answer   string `json:"answer"`
+	Name     string  `json:"name"`
+	Surname  string  `json:"surname"`
+	Email    string  `json:"email"`
+	Phone    string  `json:"phone"`
+	Password string  `json:"password"`
+	Question string  `json:"question"`
+	Answer   string  `json:"answer"`
+	Address  *string `json:"address"`
 }
 
 type LoginRequest struct {
@@ -24,6 +25,7 @@ type UserResponse struct {
 	Role     string `json:"role"`
 	Question string `json:"question"`
 	Points   int    `json:"points"`
+	Address  string `json:"address,omitempty"`
 }
 
 type UserListResponse struct {

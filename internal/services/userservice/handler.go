@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"story-book/internal/dto"
 	"story-book/internal/entities"
+	"story-book/package/services/helperservice"
 
 	"github.com/labstack/echo/v4"
 )
@@ -85,6 +86,7 @@ func (h *UserHandler) SignUp(c echo.Context) error {
 		Password: request.Password,
 		Question: request.Question,
 		Answer:   request.Answer,
+		Address:  helperservice.Validate(&request.Address),
 	})
 
 	if err != nil {
@@ -103,6 +105,7 @@ func (h *UserHandler) SignUp(c echo.Context) error {
 			Role:     user.Role,
 			Question: user.Question,
 			Points:   user.Points,
+			Address:  helperservice.Validate(request.Address),
 		},
 	})
 }
@@ -139,6 +142,7 @@ func (h *UserHandler) SignUpAdmin(c echo.Context) error {
 		Password: request.Password,
 		Question: request.Question,
 		Answer:   request.Answer,
+		Address:  request.Address,
 	})
 
 	if err != nil {
@@ -157,6 +161,7 @@ func (h *UserHandler) SignUpAdmin(c echo.Context) error {
 			Role:     user.Role,
 			Question: user.Question,
 			Points:   user.Points,
+			Address:  helperservice.Validate(request.Address),
 		},
 	})
 }
@@ -173,6 +178,7 @@ func (h *UserHandler) SignUpAdmin(c echo.Context) error {
 func (h *UserHandler) Refresh(c echo.Context) error {
 	id := c.Get("id").(string)
 	role := c.Get("role").(string)
+
 	access, refresh, err := h.service.RefreshTokens(id, role)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: err.Error()})
@@ -246,6 +252,7 @@ func (h *UserHandler) ReadSelf(c echo.Context) error {
 		Role:     user.Role,
 		Question: user.Question,
 		Points:   user.Points,
+		Address:  helperservice.Validate(user.Address),
 	})
 }
 
@@ -292,6 +299,7 @@ func (h *UserHandler) ReadUser(c echo.Context) error {
 		Phone:   user.Phone,
 		Role:    user.Role,
 		Points:  user.Points,
+		Address: helperservice.Validate(user.Address),
 	})
 }
 
@@ -327,7 +335,7 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 		Phone:    request.Phone,
 		Question: request.Question,
 		Answer:   request.Answer,
-		Points:   0,
+		Address:  request.Address,
 	})
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
@@ -345,6 +353,7 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 		Role:     user.Role,
 		Question: user.Question,
 		Points:   user.Points,
+		Address:  helperservice.Validate(request.Address),
 	})
 }
 

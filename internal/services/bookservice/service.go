@@ -2,7 +2,6 @@ package bookservice
 
 import (
 	"context"
-	"fmt"
 	"story-book/internal/entities"
 
 	"github.com/google/uuid"
@@ -45,7 +44,6 @@ func (s *bookService) ReedBookById(ctx context.Context, id string) (*entities.Bo
 }
 
 func (s *bookService) ReadBooks(ctx context.Context, limit, offset int) ([]entities.Book, error) {
-	fmt.Println(uuid.NewString())
 	books, err := s.repo.ReadAll(ctx, limit, offset)
 	if err != nil {
 		return nil, err

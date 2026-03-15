@@ -85,6 +85,35 @@ definitions:
       book_id:
         type: string
     type: object
+  dto.CodeListResponse:
+    properties:
+      codes:
+        items:
+          $ref: '#/definitions/dto.CodeResponse'
+        type: array
+    type: object
+  dto.CodeRequest:
+    properties:
+      amount_of_usage:
+        type: integer
+      code:
+        type: string
+      expired_at:
+        type: string
+      percent:
+        type: integer
+    type: object
+  dto.CodeResponse:
+    properties:
+      amount_of_usage:
+        type: integer
+      code:
+        type: string
+      expired_at:
+        type: string
+      percent:
+        type: integer
+    type: object
   dto.ErrorResponse:
     properties:
       error:
@@ -119,6 +148,54 @@ definitions:
       access_token:
         type: string
       refresh_token:
+        type: string
+    type: object
+  dto.OrderBooksResponse:
+    properties:
+      amount:
+        type: integer
+      book:
+        $ref: '#/definitions/dto.BookResponse'
+      price_for_one:
+        type: number
+    type: object
+  dto.OrderListResponse:
+    properties:
+      orders:
+        items:
+          $ref: '#/definitions/dto.OrderResponse'
+        type: array
+    type: object
+  dto.OrderRequest:
+    properties:
+      address:
+        type: string
+      code:
+        type: string
+      shop_id:
+        type: string
+    type: object
+  dto.OrderResponse:
+    properties:
+      address:
+        type: string
+      cost:
+        type: number
+      created_at:
+        type: string
+      delivery_type:
+        type: string
+      id:
+        type: string
+      order_books:
+        items:
+          $ref: '#/definitions/dto.OrderBooksResponse'
+        type: array
+      points:
+        type: integer
+      shop:
+        $ref: '#/definitions/dto.ShopResponse'
+      status:
         type: string
     type: object
   dto.RatingRequest:
@@ -160,8 +237,15 @@ definitions:
       user:
         $ref: '#/definitions/dto.UserResponse'
     type: object
+  dto.StatusRequest:
+    properties:
+      status:
+        type: string
+    type: object
   dto.UserRequest:
     properties:
+      address:
+        type: string
       answer:
         type: string
       email:
@@ -179,6 +263,8 @@ definitions:
     type: object
   dto.UserResponse:
     properties:
+      address:
+        type: string
       email:
         type: string
       id:
@@ -583,7 +669,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
-      summary: Получить магазины
+      summary: Получить карты
       tags:
       - cards
     post:
@@ -786,6 +872,119 @@ paths:
       summary: Обновить количество книг в корзине
       tags:
       - carts
+  /codes:
+    get:
+      parameters:
+      - description: Количество записей на странице (по умолчанию 10)
+        in: query
+        name: limit
+        type: integer
+      - description: Количество пропускаемых записей (по умолчанию 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CodeListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получить промо-коды
+      tags:
+      - codes
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные промо-кода
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CodeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Создать промо-код
+      tags:
+      - codes
+  /codes/{code}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Название промо-кода
+        in: path
+        name: code
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удалить промо-код
+      tags:
+      - codes
   /favourites:
     get:
       parameters:
@@ -966,6 +1165,194 @@ paths:
       summary: Удалить жанр книги
       tags:
       - genres
+  /orders:
+    get:
+      parameters:
+      - description: 'Фильтр: начальная дата (формат YYYY-MM-DD)'
+        in: query
+        name: start_date
+        type: string
+      - description: 'Фильтр: конечная дата (формат YYYY-MM-DD)'
+        in: query
+        name: end_date
+        type: string
+      - description: Количество записей на странице (по умолчанию 10)
+        in: query
+        name: limit
+        type: integer
+      - description: Количество пропускаемых записей (по умолчанию 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.OrderListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получить заказы
+      tags:
+      - orders
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные заказа
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.OrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Создать заказ
+      tags:
+      - orders
+  /orders/{id}:
+    get:
+      parameters:
+      - description: ID заказа
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.OrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получить закад по ID
+      tags:
+      - orders
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID заказа
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Данные статуса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.StatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Поменять статус заказа
+      tags:
+      - orders
+  /orders/pay/{id}:
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID заказа
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Оплатить заказ (поменять статус на "paid")
+      tags:
+      - orders
   /ratings:
     post:
       consumes:
@@ -1013,12 +1400,6 @@ paths:
         name: book_id
         required: true
         type: string
-      - description: Данные рейтинга
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.RatingRequest'
       responses:
         "204":
           description: No Content
