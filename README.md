@@ -1,12 +1,11 @@
 # Story Book
 
-Проект **Story Book** — это backend-приложение на Go с использованием PostgreSQL и Redis.
+Проект **Story Book** — это backend-приложение на Go с использованием PostgreSQL.
 
 ## Технологии
 
 * **Go:** 1.25.0
 * **PostgreSQL:** 17
-* **Redis:** 7
 * **Docker & Docker Compose** для локального развертывания сервисов
 
 ## Установка и запуск
