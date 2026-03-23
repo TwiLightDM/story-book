@@ -65,7 +65,7 @@ func GetLimitAndOffset(c echo.Context) (int, int, error) {
 	limitStr := c.QueryParam("limit")
 	offsetStr := c.QueryParam("offset")
 
-	limit := 10
+	limit := 1000
 	offset := 0
 
 	var err error
